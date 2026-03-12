@@ -59,29 +59,28 @@ $(LIB_VULKAN):
 
 libfclean:
 	@echo "→ Cleaning lib_ncurses..."
-	$(MAKE) -sC $(LIB_NCURSES_DIR) fclean
+	@$(MAKE) -sC $(LIB_NCURSES_DIR) fclean
 	@echo "→ Cleaning lib_opengl..."
-	$(MAKE) -sC $(LIB_OPENGL_DIR) fclean
+	@$(MAKE) -sC $(LIB_OPENGL_DIR) fclean
 	@echo "→ Cleaning lib_vulkan..."
-	$(MAKE) -sC $(LIB_VULKAN_DIR) fclean
+	@$(MAKE) -sC $(LIB_VULKAN_DIR) fclean
 
 libclean:
-	@echo "→ Cleaning lib_ncurses..."
-	$(MAKE) -sC $(LIB_NCURSES_DIR) clean
-	@echo "→ Cleaning lib_opengl..."
-	$(MAKE) -sC $(LIB_OPENGL_DIR) clean
-	@echo "→ Cleaning lib_vulkan..."
-	$(MAKE) -sC $(LIB_VULKAN_DIR) clean
+	@echo "→ Cleaning lib_ncurses objects..."
+	@$(MAKE) -sC $(LIB_NCURSES_DIR) clean
+	@echo "→ Cleaning lib_opengl objects...."
+	@$(MAKE) -sC $(LIB_OPENGL_DIR) clean
+	@echo "→ Cleaning lib_vulkan objects..."
+	@$(MAKE) -sC $(LIB_VULKAN_DIR) clean
 
 clean: libclean
 	@echo "→ Cleaning objects..."
-	rm -rf $(OBJS_DIR)
+	@rm -rf $(OBJS_DIR)
 
 fclean: libfclean
-	@echo "→ Cleaning in depths"
-	rm -rf $(DEPS_DIR)
-	rm -rf $(BUILD_DIR)
-	rm -rf $(TARGET)
+	@echo "→ Cleaning in depths..."
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(TARGET)
 
 re: fclean all
 

@@ -27,11 +27,9 @@ $(OBJS_DIR)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(DEFINE) -c $< -o $@
 
 clean:
-	@echo "→ Cleaning objects..."
 	rm -rf $(OBJS_DIR)
 
 fclean:
-	@echo "→ Cleaning in depths"
 	rm -rf $(DEPS_DIR)
 	rm -rf $(BUILD_DIR)
 	rm -rf $(TARGET)

@@ -40,11 +40,9 @@ $(GLFW_LIB): $(GLFW_DEP_DIR)
 	@cd $(GLFW_BUILD_DIR) && cmake -DBUILD_SHARED_LIBS=OFF ../../$(DEPS_DIR)/glfw && make -s
 
 clean:
-	@echo "→ Cleaning objects..."
 	rm -rf $(OBJS_DIR)
 
 fclean:
-	@echo "→ Cleaning in depths"
 	rm -rf $(DEPS_DIR)
 	rm -rf $(BUILD_DIR)
 	rm -rf $(TARGET)
