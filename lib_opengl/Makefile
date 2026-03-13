@@ -12,7 +12,8 @@ OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
 CXX 		:= g++
 CXXFLAGS	:= -Wall -Wextra -Werror -fPIC \
-			   -I$(INCLUDE_DIR)
+			   -I$(INCLUDE_DIR) \
+			   -I../include
 LDFLAGS		:= -shared
 
 GLFW_DEP_DIR := $(DEPS_DIR)/glfw

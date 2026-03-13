@@ -12,14 +12,15 @@ OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
 CXX 		:= g++
 CXXFLAGS	:= -Wall -Wextra -Werror -fPIC \
-			   -I$(INCLUDE_DIR)
-LDFLAGS		:= -shared
+			   -I$(INCLUDE_DIR) \
+			   -I../include
+LDFLAGS		:= -shared -fPIC -lncurses
 
 all: $(TARGET)
 
-$(TARGET): $(GLFW_LIB) $(OBJS)
+$(TARGET): $(OBJS)
 	@echo "→ Linking of $(TARGET)"
-	$(CXX) $(OBJS) $(GLFW_LIB) $(LDFLAGS) -o $@
+	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
 
 $(OBJS_DIR)/%.o: %.cpp
 	@mkdir -p $(OBJS_DIR)

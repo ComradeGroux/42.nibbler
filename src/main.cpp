@@ -1,9 +1,9 @@
-#include <dlfcn.h>
-
 #include <iostream>
 #include <string.h>
 
 #include "setting.h"
+
+#include "LibLoader.hpp"
 
 inline static void	printUsage(void)
 {
@@ -119,6 +119,18 @@ int	main(int argc, char** argv)
 		freeOptions(options);
 		return EXIT_FAILURE;
 	}
+
+	LibLoader	loader;
+	loader.load(options[LIB]);
+	loader.get()->clear();
+
+
+	loader.load(LIB2);
+	loader.get()->clear();
+
+
+	loader.load(LIB3);
+	loader.get()->clear();
 
 	freeOptions(options);
 	return EXIT_SUCCESS;
