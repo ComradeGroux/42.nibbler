@@ -7,11 +7,11 @@
 #define HEIGHT	1
 #define LIB		2
 
-#define MIN_WIDTH 480
-#define MAX_WIDTH 720
+#define MIN_WIDTH 5
+#define MAX_WIDTH 10
 
-#define MIN_HEIGHT 480
-#define MAX_HEIGHT 720
+#define MIN_HEIGHT 5
+#define MAX_HEIGHT 10
 
 #define LIB1 "ncurses"
 #define LIB1_PATH "lib_" LIB1 "/lib_" LIB1 ".so"

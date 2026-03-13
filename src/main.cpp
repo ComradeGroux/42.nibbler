@@ -15,8 +15,8 @@ inline static void	printHelp(void)
 	std::cout << "An application to learn dynamic libraries" << std::endl << std::endl;
 	std::cout << BWHT << "USAGE:" << CRESET << " nibbler" << CRESET << " --width <WIDTH> --height <HEIGHT> [OPTIONS]" << std::endl << std::endl;
 	std::cout << BWHT << "MANDATORY FLAGS:" << CRESET << std::endl;
-	std::cout << "  -w <WIDTH>,  --width <WIDTH>                   Width of the window in pixels. Must be between " << BWHT << MIN_WIDTH << CRESET << " and " << BWHT << MAX_WIDTH << CRESET << std::endl;
-	std::cout << "  -h <HEIGHT>, --height <HEIGHT>                 Height of the window in pixels. Must be between " << BWHT << MIN_HEIGHT << CRESET << " and " << BWHT << MAX_HEIGHT << CRESET<< std::endl << std::endl;
+	std::cout << "  -w <WIDTH>,  --width <WIDTH>                   Width of the grid in number of case. Must be between " << BWHT << MIN_WIDTH << CRESET << " and " << BWHT << MAX_WIDTH << CRESET << std::endl;
+	std::cout << "  -h <HEIGHT>, --height <HEIGHT>                 Height of the grid in number of case. Must be between " << BWHT << MIN_HEIGHT << CRESET << " and " << BWHT << MAX_HEIGHT << CRESET<< std::endl << std::endl;
 	std::cout << BWHT << "OPTIONNAL FLAGS:" << CRESET << std::endl;
 	std::cout << "  -l,          --lib [" << UWHT << LIB1 << CRESET << ", " << LIB2 << ", " << LIB3 << "]   Library to use at launched" << std::endl;
 	std::cout << "               --help                            Print this help message" << std::endl;
