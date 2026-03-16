@@ -5,7 +5,7 @@
 #include <GLFW/glfw3.h>
 
 extern "C" IGraphLib* 	create();
-extern "C" void			destroy();
+extern "C" void			destroy(IGraphLib *glib);
 
 class Graphics : public IGraphLib {
 	private:
