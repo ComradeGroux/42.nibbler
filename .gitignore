@@ -44,3 +44,4 @@ build/
 lib/
 nibbler
 *.pdf
+*.debug
