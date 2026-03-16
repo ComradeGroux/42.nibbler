@@ -7,22 +7,24 @@
 #include <string>
 #include <dlfcn.h>
 
-LibLoader::LibLoader(void)
+LibLoader::LibLoader(void) : _handle(nullptr), _lib(nullptr)
 {
-	_handle = nullptr;
-	_lib = nullptr;
 }
 
-LibLoader::LibLoader(const LibLoader &src)
+LibLoader::LibLoader(const LibLoader &src) : _handle(nullptr), _lib(nullptr)
 {
-	_handle = src._handle;
-	_lib = src._lib;
+	if (!src._lib_name.empty())
+		load(src._lib_name.c_str());
 }
 
-LibLoader	LibLoader::operator=(const LibLoader &src)
+LibLoader&	LibLoader::operator=(const LibLoader &src)
 {
-	_handle = src._handle;
-	_lib = src._lib;
+	if (this == &src)
+		return *this;
+
+	unload();
+	if (!src._lib_name.empty())
+		load(src._lib_name.c_str());
 
 	return *this;
 }
@@ -34,6 +36,8 @@ LibLoader::~LibLoader(void)
 
 void	LibLoader::load(const char *lib_name)
 {
+	_lib_name.assign(lib_name);
+
 	if (strcmp(lib_name, LIB1) == 0)
 		_loadLib(LIB1_PATH);
 	else if (strcmp(lib_name, LIB2) == 0)
