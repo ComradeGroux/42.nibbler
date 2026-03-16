@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 
 #include <ncurses.h>
+#include <unistd.h>
 
 #define WALL_COLOR	1
 #define FOOD_COLOR	2
@@ -34,7 +35,7 @@ Graphics::Graphics(void)
 	nonl();
 	keypad(stdscr, TRUE);
 	intrflush(stdscr, FALSE);
-	timeout(1);
+	halfdelay(5);
 	curs_set(0);
 	initColors();
 }
@@ -44,21 +45,10 @@ Graphics::~Graphics(void)
 	endwin();
 }
 
-void	Graphics::clear(void)
-{
-	wclear(stdscr);
-}
-
-void	Graphics::drawSnake(void)
-{
-}
-
-void	Graphics::drawFood(void)
-{
-}
-
 void	Graphics::render(const Level& lvl)
 {
+	wclear(stdscr);
+
 	int	width = lvl.getWidth();
 	int	height = lvl.getHeight();
 

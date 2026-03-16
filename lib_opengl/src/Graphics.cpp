@@ -18,20 +18,6 @@ Graphics::~Graphics(void)
 {
 }
 
-#include <iostream>
-void	Graphics::clear(void)
-{
-	std::cout << "TEST FROM opengl" << std::endl;
-}
-
-void	Graphics::drawSnake(void)
-{
-}
-
-void	Graphics::drawFood(void)
-{
-}
-
 void	Graphics::render(const Level& lvl)
 {
 	(void)lvl;
