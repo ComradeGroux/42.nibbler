@@ -2,8 +2,7 @@
 #include <string.h>
 
 #include "setting.h"
-
-#include "LibLoader.hpp"
+#include "Snake.hpp"
 
 inline static void	printUsage(void)
 {
@@ -120,17 +119,18 @@ int	main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	LibLoader	loader;
-	loader.load(options[LIB]);
-	loader.get()->clear();
+	try
+	{
+		Snake	snake(width, height, options[LIB]);
 
-
-	loader.load(LIB2);
-	loader.get()->clear();
-
-
-	loader.load(LIB3);
-	loader.get()->clear();
+		snake.start();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		freeOptions(options);
+		return EXIT_FAILURE;
+	}
 
 	freeOptions(options);
 	return EXIT_SUCCESS;
