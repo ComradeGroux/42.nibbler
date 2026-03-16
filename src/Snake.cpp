@@ -1,5 +1,7 @@
 #include "Snake.hpp"
 
+#include "setting.h"
+
 Snake::Snake(int width, int height, char *lib_name) : _level(width, height)
 {
 	_loader.load(lib_name);
@@ -25,8 +27,32 @@ Snake::~Snake(void)
 {
 }
 
+void	Snake::_handleInput(e_keycode input)
+{
+	switch (input)
+	{
+		case E_KEY_ONE:
+			_loader.load(LIB1);
+			break;
+		case E_KEY_TWO:
+			_loader.load(LIB2);
+			break;
+		case E_KEY_THREE:
+			_loader.load(LIB3);
+			break;
+		default:
+			break;
+	}
+}
+
 void	Snake::start(void)
 {
 	_level.generateFood();
-	_level.render();
+	while (_loader.get()->getInput() != E_KEY_ESC)
+	{
+		_handleInput(_loader.get()->getInput());
+
+		_loader.get()->clear();
+		_loader.get()->render(_level);
+	}
 }

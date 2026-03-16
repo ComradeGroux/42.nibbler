@@ -9,6 +9,7 @@ class Level
 			E_WALL,
 			E_EMPTY,
 			E_FOOD,
+			E_HEAD,
 			E_SNAKE
 		} t_cell;
 

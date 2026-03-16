@@ -9,6 +9,8 @@ class Snake
 		Level		_level;
 		LibLoader	_loader;
 
+		void	_handleInput(e_keycode input);
+
 	public:
 		Snake(int width, int height, char *lib_name);
 		Snake(const Snake& src);

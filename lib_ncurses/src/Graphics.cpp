@@ -81,15 +81,17 @@ void	Graphics::render(const Level& lvl)
 					addstr("FF");
 					attroff(COLOR_PAIR(FOOD_COLOR));
 					break;
-				case Level::E_SNAKE:
+				case Level::E_HEAD:
 					attron(COLOR_PAIR(HEAD_COLOR));
 					addstr("OO");
 					attroff(COLOR_PAIR(HEAD_COLOR));
 					break;
-				default:
+				case Level::E_SNAKE:
 					attron(COLOR_PAIR(SNAKE_COLOR));
 					addstr("oo");
 					attroff(COLOR_PAIR(SNAKE_COLOR));
+					break;
+				default:
 					break;
 			}
 		}
