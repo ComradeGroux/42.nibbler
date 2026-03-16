@@ -25,7 +25,7 @@ LIB_VULKAN		:= $(LIB_VULKAN_DIR)/lib_vulkan.so
 #########################
 CXX := g++
 LDFLAGS :=
-CXXFLAGS := -std=c++17 -O2 -Wall -Werror \
+CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Werror \
 			-I$(INCLUDE_DIR)
 DEBUG_FLAGS := -g -DDEBUG
 

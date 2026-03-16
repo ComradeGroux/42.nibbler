@@ -10,8 +10,11 @@ Snake::Snake(const Snake& src) : _level(src._level)
 	_loader = src._loader;
 }
 
-Snake	Snake::operator=(const Snake& src)
+Snake&	Snake::operator=(const Snake& src)
 {
+	if (this == &src)
+		return *this;
+
 	_loader = src._loader;
 	_level = src._level;
 
@@ -24,4 +27,6 @@ Snake::~Snake(void)
 
 void	Snake::start(void)
 {
+	_level.generateFood();
+	_level.render();
 }
