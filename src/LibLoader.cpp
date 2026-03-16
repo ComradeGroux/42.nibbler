@@ -40,6 +40,8 @@ void	LibLoader::load(const char *lib_name)
 		_loadLib(LIB2_PATH);
 	else if (strcmp(lib_name, LIB3) == 0)
 		_loadLib(LIB3_PATH);
+	else
+		throw BadLibraryException();
 }
 
 void	LibLoader::_loadLib(const char *path)
@@ -49,7 +51,7 @@ void	LibLoader::_loadLib(const char *path)
 
 	_handle = dlopen(path, RTLD_LAZY);
 	if (_handle == NULL)
-		throw std::runtime_error("Library not found");
+		throw LibraryNotFoundException();
 
 	const char* err = dlerror();
 	if (err)
@@ -86,4 +88,14 @@ void	LibLoader::unload(void)
 IGraphLib*	LibLoader::get(void) const
 {
 	return _lib;
+}
+
+const char*	LibLoader::BadLibraryException::what() const throw()
+{
+	return "Bad library";
+}
+
+const char*	LibLoader::LibraryNotFoundException::what() const throw()
+{
+	return "Library not found";
 }

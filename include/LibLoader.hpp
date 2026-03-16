@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IGraphLib.hpp"
+#include <exception>
 
 class	LibLoader {
 	private:
@@ -19,4 +20,13 @@ class	LibLoader {
 		void		unload(void);
 	
 		IGraphLib*	get(void) const;
+
+		class	BadLibraryException : public std::exception {
+			public:
+				virtual const char*	what(void) const throw();
+		};
+		class	LibraryNotFoundException : public std::exception {
+			public:
+				virtual const char*	what(void) const throw();
+		};
 };
