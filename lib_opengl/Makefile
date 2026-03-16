@@ -38,7 +38,7 @@ $(GLFW_DEP_DIR):
 $(GLFW_LIB): $(GLFW_DEP_DIR)
 	@echo "→ Compilation of GLFW"
 	@mkdir -p $(GLFW_BUILD_DIR)
-	@cd $(GLFW_BUILD_DIR) && cmake -DBUILD_SHARED_LIBS=OFF ../../$(DEPS_DIR)/glfw && make -s
+	@cd $(GLFW_BUILD_DIR) && cmake -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF ../../$(DEPS_DIR)/glfw && make -s
 
 clean:
 	rm -rf $(OBJS_DIR)

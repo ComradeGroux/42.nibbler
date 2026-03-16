@@ -49,6 +49,16 @@ Level::~Level(void)
 	delete[] _board;
 }
 
+int	Level::getWidth(void) const
+{
+	return _width;
+}
+
+int	Level::getHeight(void) const
+{
+	return _height;
+}
+
 Level::t_cell	Level::getCell(int x, int y) const
 {
 	if (x >= _width || y >= _height)

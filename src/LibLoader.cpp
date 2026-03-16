@@ -36,6 +36,9 @@ LibLoader::~LibLoader(void)
 
 void	LibLoader::load(const char *lib_name)
 {
+	if (!_lib_name.empty() && strcmp(_lib_name.c_str(), lib_name) == 0)
+		return ;
+
 	_lib_name.assign(lib_name);
 
 	if (strcmp(lib_name, LIB1) == 0)

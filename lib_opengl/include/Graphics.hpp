@@ -14,9 +14,9 @@ class Graphics : public IGraphLib {
 		Graphics(void);
 		~Graphics(void);
 
-		void	clear(void);
-		void	drawSnake(void);
-		void	drawFood(void);
-		void	render(void);
-		int		getInput(void);
+		void		clear(void);
+		void		drawSnake(void);
+		void		drawFood(void);
+		void		render(const Level& lvl);
+		t_keycode	getInput(void);
 };

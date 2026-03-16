@@ -24,7 +24,7 @@ LIB_VULKAN		:= $(LIB_VULKAN_DIR)/lib_vulkan.so
 ### COMPILATION RULES ###
 #########################
 CXX := g++
-LDFLAGS :=
+LDFLAGS := -rdynamic
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Werror \
 			-I$(INCLUDE_DIR)
 DEBUG_FLAGS := -g -DDEBUG

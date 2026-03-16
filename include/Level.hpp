@@ -25,6 +25,9 @@ class Level
 		Level&	operator=(const Level& src);
 		~Level(void);
 
+		int	getWidth(void) const;
+		int	getHeight(void) const;
+
 		t_cell	getCell(int x, int y) const;
 		void	setCell(int x, int y, t_cell cell);
 

@@ -32,11 +32,12 @@ void	Graphics::drawFood(void)
 {
 }
 
-void	Graphics::render(void)
+void	Graphics::render(const Level& lvl)
 {
+	(void)lvl;
 }
 
-int		Graphics::getInput(void)
+t_keycode		Graphics::getInput(void)
 {
-	return -1;
+	return E_NOTHING;
 }
