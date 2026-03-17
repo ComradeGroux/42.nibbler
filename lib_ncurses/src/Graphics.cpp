@@ -1,6 +1,5 @@
 #include "Graphics.hpp"
 
-#include <ncurses.h>
 #include <unistd.h>
 
 #define WALL_COLOR	1
@@ -63,22 +62,17 @@ void	Graphics::render(const Level& lvl)
 					break;
 				case Level::E_WALL:
 					attron(COLOR_PAIR(WALL_COLOR));
-					addstr("WW");
+					addstr("  ");
 					attroff(COLOR_PAIR(WALL_COLOR));
 					break;
 				case Level::E_FOOD:
 					attron(COLOR_PAIR(FOOD_COLOR));
-					addstr("FF");
+					addstr("  ");
 					attroff(COLOR_PAIR(FOOD_COLOR));
-					break;
-				case Level::E_HEAD:
-					attron(COLOR_PAIR(HEAD_COLOR));
-					addstr("OO");
-					attroff(COLOR_PAIR(HEAD_COLOR));
 					break;
 				case Level::E_SNAKE:
 					attron(COLOR_PAIR(SNAKE_COLOR));
-					addstr("oo");
+					addstr("  ");
 					attroff(COLOR_PAIR(SNAKE_COLOR));
 					break;
 				default:

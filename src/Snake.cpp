@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <iostream>
+#include <sys/time.h>
 
 Snake::Snake(int width, int height, char *lib_name) : _level(width, height)
 {
@@ -30,6 +31,8 @@ Snake::Snake(int width, int height, char *lib_name) : _level(width, height)
 		_level.setCell(p.first, p.second, Level::E_SNAKE);
 		_pos.push(p);
 	}
+
+	_pause = true;
 }
 
 Snake::Snake(const Snake& src) : _level(src._level)
@@ -56,35 +59,42 @@ Snake::~Snake(void)
 {
 }
 
-void	Snake::_handleInput(e_keycode input)
+void	Snake::_handleInput(t_keycode input)
 {
 	switch (input)
 	{
 		case E_KEY_ONE:
+			_pause = true;
 			_loader.load(LIB1);
 			break;
 		case E_KEY_TWO:
+			_pause = true;
 			_loader.load(LIB2);
 			break;
 		case E_KEY_THREE:
+			_pause = true;
 			_loader.load(LIB3);
 			break;
 		case E_KEY_UP:
+			_pause = false;
 			if (_direction == NORTH || _direction == SOUTH)
 				break;
 			_direction = NORTH;
 			break;
 		case E_KEY_RIGHT:
+			_pause = false;
 			if (_direction == EAST || _direction == WEST)
 				break;
 			_direction = EAST;
 			break;
 		case E_KEY_DOWN:
+			_pause = false;
 			if (_direction == SOUTH || _direction == NORTH)
 				break;
 			_direction = SOUTH;
 			break;
 		case E_KEY_LEFT:
+			_pause = false;
 			if (_direction == WEST || _direction == EAST)
 				break;
 			_direction = WEST;
@@ -133,22 +143,25 @@ int	Snake::_move(void)
 	return 0;
 }
 
+inline void	Snake::_update(t_keycode& input)
+{
+	input = _loader.get()->getInput();
+	_handleInput(input);
+	_loader.get()->render(_level);
+
+	if (_pause == false && _move() == -1)
+	{
+		_loader.unload();
+		std::cout << BRED << "You died" << CRESET << std::endl;
+		input = E_KEY_ESC;
+	}
+}
+
 void	Snake::start(void)
 {
 	_level.generateFood();
+
 	t_keycode	input = E_KEY_UP;
 	while (input != E_KEY_ESC)
-	{
-		_loader.get()->render(_level);
-
-		input = _loader.get()->getInput();
-		_handleInput(input);
-
-		if (_move() == -1)
-		{
-			_loader.unload();
-			std::cout << BRED << "You died" << CRESET << std::endl;
-			break;
-		}
-	}
+		_update(input);
 }
