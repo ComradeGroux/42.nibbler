@@ -45,3 +45,5 @@ lib/
 nibbler
 *.pdf
 *.debug
+test.cpp
+.venv
