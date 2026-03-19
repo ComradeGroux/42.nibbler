@@ -79,29 +79,12 @@ Graphics::Graphics(void)
 	_initShaders();
 }
 
-Graphics::Graphics(const Graphics& src)
-{
-	_window = src._window;
-	_width = src._width;
-	_height = src._height;
-}
-
-Graphics&	Graphics::operator=(const Graphics& src)
-{
-	if (this == &src)
-		return *this;
-
-	_window = src._window;
-	_width = src._width;
-	_height = src._height;
-	return *this;
-}
-
 Graphics::~Graphics(void)
 {
 	glDeleteVertexArrays(1, &_vao);
 	glDeleteBuffers(1, &_vbo);
 	glDeleteProgram(_shaderProgram);
+
 	glfwDestroyWindow(_window);
 	glfwTerminate();
 }

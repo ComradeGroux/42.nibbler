@@ -56,22 +56,29 @@ void	LibLoader::_loadLib(const char *path)
 	if (_handle)
 		unload();
 
-	_handle = dlopen(path, RTLD_LAZY);
+	_handle = dlopen(path, RTLD_LAZY | RTLD_NODELETE);
 	if (_handle == NULL)
 		throw LibraryNotFoundException();
 
-	const char* err = dlerror();
-	if (err)
-		throw std::runtime_error(err);
-
+	dlerror();
 	using CreateFunc = IGraphLib*(*)();
 	CreateFunc create = (CreateFunc)dlsym(_handle, "create");
 
-	err = dlerror();
+	const char* err = dlerror();
 	if (err)
+	{
+		dlclose(_handle);
+		_handle = nullptr;
 		throw std::runtime_error(err);
+	}
 
-	_lib = create();
+	try {
+		_lib = create();
+	} catch (const std::exception& e) {
+		dlclose(_handle);
+		_handle = nullptr;
+		throw;
+	}
 }
 
 void	LibLoader::unload(void)
