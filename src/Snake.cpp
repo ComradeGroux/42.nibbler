@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 #include <iostream>
-#include <sys/time.h>
+#include <chrono>
 
 Snake::Snake(int width, int height, char *lib_name) : _level(width, height)
 {
@@ -59,7 +59,7 @@ Snake::~Snake(void)
 {
 }
 
-void	Snake::_handleInput(t_keycode input)
+void	Snake::_handleLibInput(t_keycode input)
 {
 	switch (input)
 	{
@@ -75,27 +75,37 @@ void	Snake::_handleInput(t_keycode input)
 			_pause = true;
 			_loader.load(LIB3);
 			break;
+		default:
+			_pause = false;
+			break;
+	}
+}
+
+void	Snake::_handleMovementInput(t_keycode input, t_facing& precedent)
+{
+	switch (input)
+	{
 		case E_KEY_UP:
 			_pause = false;
-			if (_direction == NORTH || _direction == SOUTH)
+			if (precedent == NORTH || precedent == SOUTH || _direction == NORTH || _direction == SOUTH)
 				break;
 			_direction = NORTH;
 			break;
 		case E_KEY_RIGHT:
 			_pause = false;
-			if (_direction == EAST || _direction == WEST)
+			if (precedent == EAST || precedent == WEST || _direction == EAST || _direction == WEST)
 				break;
 			_direction = EAST;
 			break;
 		case E_KEY_DOWN:
 			_pause = false;
-			if (_direction == SOUTH || _direction == NORTH)
+			if (precedent == SOUTH || precedent == NORTH || _direction == SOUTH || _direction == NORTH)
 				break;
 			_direction = SOUTH;
 			break;
 		case E_KEY_LEFT:
 			_pause = false;
-			if (_direction == WEST || _direction == EAST)
+			if (precedent == WEST || precedent == EAST || _direction == WEST || _direction == EAST)
 				break;
 			_direction = WEST;
 			break;
@@ -145,15 +155,27 @@ int	Snake::_move(void)
 
 inline void	Snake::_update(t_keycode& input)
 {
+	static t_facing									precedent = _direction;
+	static std::chrono::steady_clock::time_point	lastTime = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point			currentTime = std::chrono::steady_clock::now();
+
+	std::chrono::duration<float>		elapsed = currentTime - lastTime;
+
 	input = _loader.get()->getInput();
-	_handleInput(input);
+	_handleLibInput(input);
+	_handleMovementInput(input, precedent);
 	_loader.get()->render(_level);
 
-	if (_pause == false && _move() == -1)
+	if (_pause == false && std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() > SPEED_MS)
 	{
-		_loader.unload();
-		std::cout << BRED << "You died" << CRESET << std::endl;
-		input = E_KEY_ESC;
+		if (_move() == -1)
+		{
+			_loader.unload();
+			std::cout << BRED << "You died" << CRESET << std::endl;
+			input = E_KEY_ESC;
+		}
+		lastTime = currentTime;
+		precedent = _direction;
 	}
 }
 

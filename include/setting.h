@@ -2,6 +2,8 @@
 
 #include "ANSI-color-codes.h"
 
+#define SPEED_MS 500
+
 #define NUMBER_OPTIONS 3
 #define WIDTH	0
 #define HEIGHT	1

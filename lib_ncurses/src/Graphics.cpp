@@ -32,9 +32,9 @@ Graphics::Graphics(void)
 	cbreak();
 	noecho();
 	nonl();
-	keypad(stdscr, TRUE);
-	intrflush(stdscr, FALSE);
-	halfdelay(5);
+	keypad(stdscr, true);
+	intrflush(stdscr, false);
+	nodelay(stdscr, true);
 	curs_set(0);
 	initColors();
 }
@@ -46,7 +46,7 @@ Graphics::~Graphics(void)
 
 void	Graphics::render(const Level& lvl)
 {
-	wclear(stdscr);
+	werase(stdscr);
 
 	int	width = lvl.getWidth();
 	int	height = lvl.getHeight();

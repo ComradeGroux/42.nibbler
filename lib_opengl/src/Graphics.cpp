@@ -224,7 +224,7 @@ void	Graphics::render(const Level& lvl)
 
 t_keycode		Graphics::getInput(void)
 {
-	glfwWaitEventsTimeout(0.5);
+	glfwPollEvents();
 
 	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		return E_KEY_ESC;

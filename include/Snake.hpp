@@ -23,7 +23,8 @@ class Snake
 
 		bool	_pause;
 
-		void	_handleInput(t_keycode input);
+		void	_handleLibInput(t_keycode input);
+		void	_handleMovementInput(t_keycode input, t_facing& precedent);
 		int		_move(void);
 		void	_update(t_keycode& input);
 
