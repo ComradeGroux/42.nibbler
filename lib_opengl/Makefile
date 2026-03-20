@@ -1,84 +1,146 @@
+BOLD  := \033[1m
+GRAY  := \033[90m
+GREEN := \033[32m
+BLUE	:= \033[34m
+RESET := \033[0m
+ERASE := \r\033[2K
+
 TARGET := lib_opengl.so
 
-SRC_DIR := src
+SRC_DIR     := src
 INCLUDE_DIR := include
-BUILD_DIR := build
-OBJS_DIR := $(BUILD_DIR)/objs
-DEPS_DIR := lib
+BUILD_DIR   := build
+OBJS_DIR    := $(BUILD_DIR)/objs
+DEPS_DIR    := lib
 
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-VPATH := $(dir $(SRCS))
-OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
+SRCS	:= $(wildcard $(SRC_DIR)/*.cpp)
+VPATH	:= $(dir $(SRCS))
+OBJS	:= $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
-GLFW_DEP_DIR := $(DEPS_DIR)/glfw
+GLFW_VER       := 3.4
+GLFW_URL       := https://github.com/glfw/glfw/archive/refs/tags/$(GLFW_VER).tar.gz
+GLFW_DEP_DIR   := $(DEPS_DIR)/glfw-$(GLFW_VER)
 GLFW_BUILD_DIR := $(BUILD_DIR)/glfw
-GLFW_LIB := $(GLFW_BUILD_DIR)/src/libglfw3.a
+GLFW_LIB       := $(GLFW_BUILD_DIR)/src/libglfw3.a
 
-GLAD_DEP_DIR := $(DEPS_DIR)/glad
-GLAD_OBJ := $(OBJS_DIR)/glad.o
+GLM_VER        := 1.0.3
+GLM_URL        := https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VER).tar.gz
+GLM_DEP_DIR    := $(DEPS_DIR)/glm-$(GLM_VER)
 
-GLM_DEP_DIR := $(DEPS_DIR)/glm
-GLM_BUILD_DIR := $(BUILD_DIR)/glm
-GLM_LIB := $(GLM_BUILD_DIR)/glm/libglm.a
+GLAD_DEP_DIR   := $(DEPS_DIR)/glad
+GLAD_OBJ       := $(OBJS_DIR)/glad.o
 
-CXX 		:= g++
-CXXFLAGS	:= -Wall -Wextra -Werror -fPIC \
-			   -I$(INCLUDE_DIR) \
-			   -I$(GLAD_DEP_DIR)/include \
-			   -I$(GLM_DEP_DIR)/\
-			   -I../include
-LDFLAGS		:= -shared -ldl -lglfw -lm
+CXX      := g++
+CXXFLAGS := -Wall -Wextra -Werror -fPIC
+INCLUDES := -I$(INCLUDE_DIR)           \
+            -I$(GLAD_DEP_DIR)/include  \
+            -I$(GLM_DEP_DIR)           \
+            -I$(GLFW_DEP_DIR)/include  \
+            -I../include
+LDFLAGS  := -shared -ldl -lm -lGL -lX11 -lXrandr -lXi
 
 all: $(TARGET)
 
-$(TARGET): $(GLFW_LIB) $(GLM_LIB) $(GLAD_OBJ) $(OBJS)
-	@echo "→ Linking of $(TARGET)"
-	$(CXX) $(OBJS) $(GLAD_OBJ) $(GLFW_LIB) $(LDFLAGS) -o $@
+$(TARGET): $(GLFW_LIB) $(GLAD_OBJ) $(OBJS)
+	@printf "$(BOLD)Linking $(TARGET)$(RESET)\n"
+	@$(CXX) $(OBJS) $(GLAD_OBJ) $(GLFW_LIB) $(LDFLAGS) -o $@
+	@printf "$(GREEN)  ✓ $(TARGET) ready$(RESET)\n"
 
-$(OBJS_DIR)/%.o: %.cpp
-	@mkdir -p $(OBJS_DIR)
-	@echo "→ Compilation of $<"
-	$(CXX) $(CXXFLAGS) $(DEFINE) -c $< -o $@
 
-$(GLFW_DEP_DIR):
-	@echo "→ Download of GLFW"
-	@mkdir -p $(DEPS_DIR)
-	git clone --depth=1 --branch 3.4 git@github.com:glfw/glfw.git $(DEPS_DIR)/glfw
-$(GLFW_LIB): $(GLFW_DEP_DIR)
-	@echo "→ Compilation of GLFW"
+
+$(OBJS_DIR):
+	@mkdir -p $@
+$(OBJS): | $(GLFW_DEP_DIR) $(GLM_DEP_DIR) $(GLAD_DEP_DIR) $(OBJS_DIR)/.compile_start
+$(OBJS_DIR)/.compile_start: $(SRCS)
+	@printf "$(BOLD)Compiling$(RESET)\n"
+	@touch $@
+$(OBJS_DIR)/%.o: %.cpp | $(OBJS_DIR)
+	@printf "$(GRAY)  $<...$(RESET)" && \
+	 $(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ && \
+	 printf "$(ERASE)$(GREEN)  ✓ $<$(RESET)\n"\
+
+
+
+$(DEPS_DIR):
+	@mkdir -p $@
+
+$(GLFW_DEP_DIR): | $(DEPS_DIR)
+	@printf "$(BOLD)Downloading GLFW $(GLFW_VER)$(RESET)\n"
+	@printf "$(GRAY)  Fetching archive...$(RESET)" && \
+	 curl -sL $(GLFW_URL) -o $(DEPS_DIR)/glfw.tar.gz && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Extracting...$(RESET)" && \
+	 tar -xzf $(DEPS_DIR)/glfw.tar.gz -C $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@rm $(DEPS_DIR)/glfw.tar.gz
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
+$(GLFW_LIB): $(GLFW_DEP_DIR) | $(OBJS_DIR)
+	@printf "$(BOLD)Building GLFW $(GLFW_VER)$(RESET)\n"
 	@mkdir -p $(GLFW_BUILD_DIR)
-	@cd $(GLFW_BUILD_DIR) && cmake -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF ../../$(DEPS_DIR)/glfw && make -s
+	@printf "$(GRAY)  Configuring cmake...$(RESET)" && \
+	 cmake -S $(GLFW_DEP_DIR) -B $(GLFW_BUILD_DIR) \
+	   -DBUILD_SHARED_LIBS=OFF                      \
+	   -DGLFW_BUILD_EXAMPLES=OFF                    \
+	   -DGLFW_BUILD_TESTS=OFF                       \
+	   -DGLFW_BUILD_DOCS=OFF                        \
+	   -DCMAKE_POSITION_INDEPENDENT_CODE=ON         \
+	   -DCMAKE_BUILD_TYPE=Release                   \
+	   > /dev/null 2>&1 && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Compiling...$(RESET)" && \
+	 $(MAKE) -C $(GLFW_BUILD_DIR) -j$(shell nproc) --no-print-directory > /dev/null 2>&1 && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
 
-$(GLM_DEP_DIR):
-	@echo "→ Download of GLM"
-	@mkdir -p $(DEPS_DIR)
-	git clone --depth=1 --branch 1.0.3 git@github.com:g-truc/glm.git $(DEPS_DIR)/glm
-$(GLM_LIB): $(GLM_DEP_DIR)
-	@echo "→ Compilation of GLM"
-	@mkdir -p $(GLM_BUILD_DIR)
-	@cd $(GLM_BUILD_DIR) && cmake -DGLM_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF ../../$(DEPS_DIR)/glm && make -s
+$(GLM_DEP_DIR): | $(DEPS_DIR)
+	@printf "$(BOLD)Downloading GLM $(GLM_VER)$(RESET)\n"
+	@printf "$(GRAY)  Fetching archive...$(RESET)" && \
+	 curl -sL $(GLM_URL) -o $(DEPS_DIR)/glm.tar.gz && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Extracting...$(RESET)" && \
+	 tar -xzf $(DEPS_DIR)/glm.tar.gz -C $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@rm $(DEPS_DIR)/glm.tar.gz
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
 
-$(GLAD_DEP_DIR):
-	@echo "→ Download of GLAD generator"
-	python3 -m venv .venv
-	.venv/bin/pip install glad --quiet
-	@echo "→ Generating GLAD files"
-	.venv/bin/glad --profile core --api gl=4.6 --generator c --out-path $(GLAD_DEP_DIR)
-$(GLAD_OBJ) : $(GLAD_DEP_DIR)
-	@mkdir -p $(OBJS_DIR)
-	@echo "→ Compilation of GLAD"
-	$(CXX) $(CXXFLAGS) -I$(GLAD_DEP_DIR)/include -c $(GLAD_DEP_DIR)/src/glad.c -o $@
+$(GLAD_DEP_DIR): | $(DEPS_DIR)
+	@printf "$(BOLD)GLAD (OpenGL 4.6 core)$(RESET)\n"
+	@printf "$(GRAY)  Setting up virtual env...$(RESET)" && \
+	 python3 -m venv $(DEPS_DIR)/.venv > /dev/null 2>&1 && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Installing glad...$(RESET)" && \
+	 $(DEPS_DIR)/.venv/bin/pip install glad --quiet && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Generating sources...$(RESET)" && \
+	 $(DEPS_DIR)/.venv/bin/glad --profile core --api gl=4.6 --generator c \
+	   --out-path $(GLAD_DEP_DIR) > /dev/null 2>&1 && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
+$(GLAD_OBJ): $(GLAD_DEP_DIR) | $(OBJS_DIR)
+	@printf "$(BOLD)Compiling GLAD$(RESET)\n"
+	@gcc -fPIC -I$(GLAD_DEP_DIR)/include -c $(GLAD_DEP_DIR)/src/glad.c -o $@
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
+
 
 
 clean:
-	rm -rf $(OBJS_DIR)
+	@printf "$(GRAY)  Removing build objects...$(RESET)" && \
+	 rm -rf $(OBJS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
 
-fclean:
-	rm -rf .venv
-	rm -rf $(DEPS_DIR)
-	rm -rf $(BUILD_DIR)
-	rm -rf $(TARGET)
+fclean: clean
+	@printf "$(GRAY)  Removing $(BUILD_DIR) and $(TARGET)...$(RESET)" && \
+	 rm -rf $(BUILD_DIR) $(TARGET) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ $(TARGET) cleaned$(RESET)\n"
+
+dclean: fclean
+	@printf "$(GRAY)  Removing $(DEPS_DIR)...$(RESET)" && \
+	 rm -rf $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Dependencies cleaned$(RESET)\n"
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all debug clean fclean dclean re

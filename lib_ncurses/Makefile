@@ -1,40 +1,68 @@
+BOLD  := \033[1m
+GRAY  := \033[90m
+GREEN := \033[32m
+BLUE	:= \033[34m
+RESET := \033[0m
+ERASE := \r\033[2K
+
 TARGET := lib_ncurses.so
 
-SRC_DIR := src
+SRC_DIR		:= src
 INCLUDE_DIR := include
-BUILD_DIR := build
-OBJS_DIR := $(BUILD_DIR)/objs
-DEPS_DIR := lib
+BUILD_DIR	:= build
+OBJS_DIR	:= $(BUILD_DIR)/objs
+DEPS_DIR	:= lib
 
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-VPATH := $(dir $(SRCS))
-OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
+SRCS	:= $(wildcard $(SRC_DIR)/*.cpp)
+VPATH	:= $(dir $(SRCS))
+OBJS	:= $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
 CXX 		:= g++
-CXXFLAGS	:= -Wall -Wextra -Werror -fPIC \
-			   -I$(INCLUDE_DIR) \
+CXXFLAGS	:= -Wall -Wextra -Werror -fPIC
+INCLUDES	:= -I$(INCLUDE_DIR) \
 			   -I../include
-LDFLAGS		:= -shared -fPIC -lncurses
+LDFLAGS		:= -shared -lncurses
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	@echo "→ Linking of $(TARGET)"
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	@printf "$(BOLD)Linking $(TARGET)$(RESET)\n"
+	@$(CXX) $(OBJS) $(LDFLAGS) -o $@
+	@printf "$(GREEN)  ✓ $(TARGET) ready$(RESET)\n"
 
-$(OBJS_DIR)/%.o: %.cpp
-	@mkdir -p $(OBJS_DIR)
-	@echo "→ Compilation of $<"
-	$(CXX) $(CXXFLAGS) $(DEFINE) -c $< -o $@
+
+
+$(OBJS_DIR):
+	@mkdir -p $@
+$(OBJS): | $(OBJS_DIR)/.compile_start
+$(OBJS_DIR)/.compile_start: $(SRCS)
+	@printf "$(BOLD)Compiling$(RESET)\n"
+	@touch $@
+$(OBJS_DIR)/%.o: %.cpp | $(OBJS_DIR)
+	@printf "$(GRAY)  $<...$(RESET)" && \
+	 $(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ && \
+	 printf "$(ERASE)$(GREEN)  ✓ $<$(RESET)\n"\
+
+
 
 clean:
-	rm -rf $(OBJS_DIR)
+	@printf "$(GRAY)  Removing build objects...$(RESET)" && \
+	 rm -rf $(OBJS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
 
-fclean:
-	rm -rf $(DEPS_DIR)
-	rm -rf $(BUILD_DIR)
-	rm -rf $(TARGET)
+fclean: clean
+	@printf "$(GRAY)  Removing $(BUILD_DIR) and $(TARGET)...$(RESET)" && \
+	 rm -rf $(BUILD_DIR) $(TARGET) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ $(TARGET) cleaned$(RESET)\n"
+
+dclean: fclean
+	@printf "$(GRAY)  Removing $(DEPS_DIR)...$(RESET)" && \
+	 rm -rf $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Dependencies cleaned$(RESET)\n"
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean dclean re

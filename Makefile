@@ -1,87 +1,139 @@
-TARGET := nibbler
+BOLD	:= \033[1m
+GRAY	:= \033[90m
+GREEN	:= \033[32m
+BLUE	:= \033[34m
+RESET	:= \033[0m
+ERASE	:= \r\033[2K
 
-SRC_DIR := src
+TARGET	:= nibbler
+
+SRC_DIR		:= src
 INCLUDE_DIR := include
-BUILD_DIR := build
-OBJS_DIR := $(BUILD_DIR)/objs
+BUILD_DIR	:= build
+OBJS_DIR	:= $(BUILD_DIR)/objs
+DEPS_DIR	:=
+LIB_SEP		:= $(BUILD_DIR)/.lib_sep
 
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+SRCS	:= $(wildcard $(SRC_DIR)/*.cpp)
+VPATH	:= $(dir $(SRCS))
+OBJS	:= $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
-VPATH := $(dir $(SRCS))
+LIB1_DIR	:= lib_ncurses
+LIB1		:= $(LIB1_DIR)/$(LIB1_DIR).so
+LIB2_DIR	:= lib_opengl
+LIB2 		:= $(LIB2_DIR)/$(LIB2_DIR).so
+LIB3_DIR	:= lib_vulkan
+LIB3		:= $(LIB3_DIR)/$(LIB3_DIR).so
 
-OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
-CLASS_DIRS := $(addprefix -I, $(addprefix $(SRC_DIR)/, $(CLASS_HEADERS)))
-
-LIB_NCURSES_DIR	:= lib_ncurses
-LIB_NCURSES		:= $(LIB_NCURSES_DIR)/lib_ncurses.so
-LIB_OPENGL_DIR	:= lib_opengl
-LIB_OPENGL 		:= $(LIB_OPENGL_DIR)/lib_opengl.so
-LIB_VULKAN_DIR	:= lib_vulkan
-LIB_VULKAN		:= $(LIB_VULKAN_DIR)/lib_vulkan.so
-
-#########################
-### COMPILATION RULES ###
-#########################
-CXX := g++
-LDFLAGS := -rdynamic
-CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Werror \
-			-I$(INCLUDE_DIR)
-DEBUG_FLAGS := -g -DDEBUG
+CXX 		:= g++
+LDFLAGS 	:= -rdynamic
+CXXFLAGS 	:= -std=c++17 -O2 -Wall -Wextra -Werror
+INCLUDES	:= -I$(INCLUDE_DIR)
 
 all: $(TARGET)
 
-debug: CXXFLAGS += $(DEBUG_FLAGS)
-debug: all
-
-$(TARGET): $(LIB_NCURSES) $(LIB_OPENGL) $(LIB_VULKAN) $(OBJS) 
-	@echo "→ Linking of $(TARGET)"
-	$(CXX) $(OBJS) $(LDFLAGS) -o $@
-
-$(OBJS_DIR)/%.o: %.cpp
-	@mkdir -p $(OBJS_DIR)
-	@echo "→ Compilation of $<"
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(LIB_NCURSES):
-	$(MAKE) -sC $(@D)
-
-$(LIB_OPENGL):
-	$(MAKE) -sC $(@D)
-
-$(LIB_VULKAN):
-	$(MAKE) -sC $(@D)
+$(TARGET): $(LIB1) $(LIB2) $(LIB3) $(OBJS)
+	@printf "$(BOLD)Linking $(TARGET)$(RESET)\n"
+	@$(CXX) $(OBJS) $(GLAD_OBJ) $(GLFW_LIB) $(LDFLAGS) -o $@
+	@printf "$(GREEN)  ✓ $(TARGET) ready$(RESET)\n"
+	@rm -f $(LIB_SEP)
 
 
-########################
-#### CLEANING RULES ####
-########################
 
-libfclean:
-	@echo "→ Cleaning lib_ncurses..."
-	@$(MAKE) -sC $(LIB_NCURSES_DIR) fclean
-	@echo "→ Cleaning lib_opengl..."
-	@$(MAKE) -sC $(LIB_OPENGL_DIR) fclean
-	@echo "→ Cleaning lib_vulkan..."
-	@$(MAKE) -sC $(LIB_VULKAN_DIR) fclean
+$(OBJS_DIR):
+	@mkdir -p $@
+$(OBJS): | $(OBJS_DIR)/.compile_start
+$(OBJS_DIR)/.nibbler_start: $(LIB1) $(LIB2) $(LIB3) $(SRCS) | $(OBJS_DIR)
+	@test -f $(LIB_SEP) && printf "\n" || mkdir -p $(BUILD_DIR); touch $(LIB_SEP)
+	@printf "$(BOLD)$(BLUE)Compiling $(TARGET)$(RESET)\n"
+	@touch $@
+$(OBJS_DIR)/.compile_start: $(SRCS) | $(OBJS_DIR)/.nibbler_start
+	@printf "$(BOLD)Compiling$(RESET)\n"
+	@touch $@
+$(OBJS_DIR)/%.o: %.cpp | $(OBJS_DIR)
+	@printf "$(GRAY)  $<...$(RESET)" && \
+	 $(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@ && \
+	 printf "$(ERASE)$(GREEN)  ✓ $<$(RESET)\n"\
+
+
+
+$(LIB1):
+	@test -f $(LIB_SEP) && printf "\n" || mkdir -p $(BUILD_DIR); touch $(LIB_SEP)
+	@printf "$(BOLD)$(BLUE)Compiling $(LIB1_DIR)$(RESET)\n"
+	@$(MAKE) -sC $(@D)
+
+$(LIB2):
+	@test -f $(LIB_SEP) && printf "\n" || mkdir -p $(BUILD_DIR); touch $(LIB_SEP)
+	@printf "$(BOLD)$(BLUE)Compiling $(LIB2_DIR)$(RESET)\n"
+	@$(MAKE) -sC $(@D)
+
+$(LIB3):
+	@test -f $(LIB_SEP) && printf "\n" || mkdir -p $(BUILD_DIR); touch $(LIB_SEP)
+	@printf "$(BOLD)$(BLUE)Compiling $(LIB3_DIR)$(RESET)\n"
+	@$(MAKE) -sC $(@D)
+
+
 
 libclean:
-	@echo "→ Cleaning lib_ncurses objects..."
-	@$(MAKE) -sC $(LIB_NCURSES_DIR) clean
-	@echo "→ Cleaning lib_opengl objects...."
-	@$(MAKE) -sC $(LIB_OPENGL_DIR) clean
-	@echo "→ Cleaning lib_vulkan objects..."
-	@$(MAKE) -sC $(LIB_VULKAN_DIR) clean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB1_DIR) clean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB2_DIR) clean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB3_DIR) clean
 
 clean: libclean
-	@echo "→ Cleaning objects..."
-	@rm -rf $(OBJS_DIR)
+	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET) objects...$(RESET)\n"
+	@printf "$(GRAY)  Removing build objects...$(RESET)" && \
+	 rm -rf $(OBJS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
+
+libfclean:
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB1_DIR) fclean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB2_DIR) fclean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB3_DIR) fclean
 
 fclean: libfclean
-	@echo "→ Cleaning in depths..."
-	@rm -rf $(BUILD_DIR)
-	@rm -rf $(TARGET)
+	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET)...$(RESET)\n"
+	@printf "$(GRAY)  Removing $(BUILD_DIR)...$(RESET)" && \
+	 rm -rf $(BUILD_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
+	@printf "$(GRAY)  Removing $(TARGET)...$(RESET)" && \
+	 rm -rf $(TARGET) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ $(TARGET) cleaned$(RESET)\n"
 
-re: fclean all
+libdclean:
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB1_DIR) dclean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB2_DIR) dclean
+	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
+	@$(MAKE) -sC $(LIB3_DIR) dclean
 
-.PHONY: all clean fclean re
+dclean: libdclean
+	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET)...$(RESET)\n"
+	@printf "$(GRAY)  Removing $(BUILD_DIR)...$(RESET)" && \
+	 rm -rf $(BUILD_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
+	@printf "$(GRAY)  Removing $(TARGET)...$(RESET)" && \
+	 rm -rf $(TARGET) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ $(TARGET) cleaned$(RESET)\n"
+	@printf "$(GRAY)  Removing $(DEPS_DIR)...$(RESET)" && \
+	 rm -rf $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@printf "$(GREEN)  ✓ Dependencies cleaned$(RESET)\n"
+
+seperate:
+	@printf	"\n"
+re: fclean seperate all
+
+.PHONY: all libclean clean libfclean fclean libdclean dclean re
