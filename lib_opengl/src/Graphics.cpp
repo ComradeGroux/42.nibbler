@@ -3,7 +3,10 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #include <stdexcept>
+#include <fstream>
+#include <sstream>
 
 IGraphLib*	create(void)
 {
@@ -14,27 +17,6 @@ void	destroy(IGraphLib *glib)
 {
 	delete glib;
 }
-
-static const char* VERT_SRC = R"(
-#version 460 core
-layout(location = 0) in vec2 aPos;
-uniform mat4 uProjection;
-uniform mat4 uModel;
-void main()
-{
-	gl_Position = uProjection * uModel * vec4(aPos, 0.0, 1.0);
-}
-)";
-
-static const char* FRAG_SRC = R"(
-#version 460 core
-uniform vec3 uColor;
-out vec4 fragColor;
-void main()
-{
-	fragColor = vec4(uColor, 1.0);
-}
-)";
 
 static const float UNIT_QUAD[] = {
 	0.0f, 0.0f,
@@ -89,8 +71,20 @@ Graphics::~Graphics(void)
 	glfwTerminate();
 }
 
-static GLuint	compileShader(GLenum type, const char* src)
+
+static GLuint	compileShader(GLenum type, const char* path)
 {
+	std::ifstream	file(path);
+	if (!file.is_open())
+	{
+		throw std::runtime_error(path);
+	}
+
+	std::stringstream	buffer;
+	buffer << file.rdbuf();
+	std::string	source = buffer.str();
+	const char*	src = source.c_str();
+	
 	GLuint shader = glCreateShader(type);
 	glShaderSource(shader, 1, &src, nullptr);
 	glCompileShader(shader);
@@ -109,8 +103,8 @@ static GLuint	compileShader(GLenum type, const char* src)
 
 void	Graphics::_initShaders(void)
 {
-	GLuint vert = compileShader(GL_VERTEX_SHADER, VERT_SRC);
-	GLuint frag = compileShader(GL_FRAGMENT_SHADER, FRAG_SRC);
+	GLuint vert = compileShader(GL_VERTEX_SHADER, "lib_opengl/shader/basic.vert");
+	GLuint frag = compileShader(GL_FRAGMENT_SHADER, "lib_opengl/shader/basic.frag");
 
 	_shaderProgram = glCreateProgram();
 	glAttachShader(_shaderProgram, vert);
