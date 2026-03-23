@@ -17,24 +17,24 @@ SRCS	:= $(wildcard $(SRC_DIR)/*.cpp)
 VPATH	:= $(dir $(SRCS))
 OBJS	:= $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
-GLFW_VER       := 3.4
-GLFW_URL       := https://github.com/glfw/glfw/archive/refs/tags/$(GLFW_VER).tar.gz
-GLFW_DEP_DIR   := $(DEPS_DIR)/glfw-$(GLFW_VER)
-GLFW_BUILD_DIR := $(BUILD_DIR)/glfw
-GLFW_LIB       := $(GLFW_BUILD_DIR)/src/libglfw3.a
+GLFW_VER		:= 3.4
+GLFW_URL		:= https://github.com/glfw/glfw/archive/refs/tags/$(GLFW_VER).tar.gz
+GLFW_DEP_DIR	:= $(DEPS_DIR)/glfw-$(GLFW_VER)
+GLFW_BUILD_DIR	:= $(BUILD_DIR)/glfw
+GLFW_LIB		:= $(GLFW_BUILD_DIR)/src/libglfw3.a
 
-GLM_VER        := 1.0.3
-GLM_URL        := https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VER).tar.gz
-GLM_DEP_DIR    := $(DEPS_DIR)/glm-$(GLM_VER)
+GLM_VER			:= 1.0.3
+GLM_URL			:= https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VER).tar.gz
+GLM_DEP_DIR		:= $(DEPS_DIR)/glm-$(GLM_VER)
 
-GLAD_DEP_DIR   := $(DEPS_DIR)/glad
-GLAD_OBJ       := $(OBJS_DIR)/glad.o
+GLAD_DEP_DIR	:= $(DEPS_DIR)/glad
+GLAD_OBJ		:= $(OBJS_DIR)/glad.o
 
 CXX      := g++
 CXXFLAGS := -Wall -Wextra -Werror -fPIC
 INCLUDES := -I$(INCLUDE_DIR)           \
-            -I$(GLAD_DEP_DIR)/include  \
             -I$(GLM_DEP_DIR)           \
+            -I$(GLAD_DEP_DIR)/include  \
             -I$(GLFW_DEP_DIR)/include  \
             -I../include
 LDFLAGS  := -shared -ldl -lm -lGL -lX11 -lXrandr -lXi

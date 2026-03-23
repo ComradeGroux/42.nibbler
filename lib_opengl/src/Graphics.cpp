@@ -57,7 +57,7 @@ Graphics::Graphics(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	_window = glfwCreateWindow(_width, _height, "NIBBLER", NULL, NULL);
+	_window = glfwCreateWindow(_width, _height, "nibbler - OpenGL", NULL, NULL);
 	if (!_window)
 	{
 		glfwTerminate();
