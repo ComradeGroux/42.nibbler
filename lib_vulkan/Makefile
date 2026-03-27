@@ -17,13 +17,17 @@ SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 VPATH := $(dir $(SRCS))
 OBJS := $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
 
-VOLK_VER    := 1.3.295
-VOLK_URL    := https://github.com/zeux/volk/archive/refs/tags/$(VOLK_VER).tar.gz
-VOLK_DEP_DIR := $(DEPS_DIR)/volk-$(VOLK_VER)
+VOLK_VER		:= 1.3.295
+VOLK_URL		:= https://github.com/zeux/volk/archive/refs/tags/$(VOLK_VER).tar.gz
+VOLK_DEP_DIR	:= $(DEPS_DIR)/volk-$(VOLK_VER)
 
-GLM_VER		:= 1.0.3
-GLM_URL		:= https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VER).tar.gz
-GLM_DEP_DIR	:= $(DEPS_DIR)/glm-$(GLM_VER)
+VMA_VER			:= 3.3.0
+VMA_URL			:= https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/refs/tags/v$(VMA_VER).tar.gz
+VMA_DEP_DIR		:= $(DEPS_DIR)/VulkanMemoryAllocator-$(VMA_VER)
+
+GLM_VER			:= 1.0.3
+GLM_URL			:= https://github.com/g-truc/glm/archive/refs/tags/$(GLM_VER).tar.gz
+GLM_DEP_DIR		:= $(DEPS_DIR)/glm-$(GLM_VER)
 
 SDL_VER			:= 3.4.2
 SDL_URL			:= https://github.com/libsdl-org/SDL/archive/refs/tags/release-$(SDL_VER).tar.gz
@@ -37,7 +41,8 @@ INCLUDES	:= -I$(INCLUDE_DIR) \
 			   -I$(GLM_DEP_DIR) \
 			   -I$(SDL_DEP_DIR)/include \
 			   -I$(VOLK_DEP_DIR) \
-			   -I../include
+			   -I../include \
+			   -isystem$(VMA_DEP_DIR)/include
 LDFLAGS		:= -shared -lm -ldl -lpthread -lwayland-client -lwayland-egl -lwayland-cursor -lxkbcommon -Wl,--version-script=exports.map
 
 all: $(TARGET)
@@ -51,7 +56,7 @@ $(TARGET): $(SDL_LIB) $(OBJS)
 
 $(OBJS_DIR):
 	@mkdir -p $@
-$(OBJS): | $(VOLK_DEP_DIR) $(GLM_DEP_DIR) $(SDL_DEP_DIR) $(OBJS_DIR)/.compile_start
+$(OBJS): | $(VOLK_DEP_DIR) $(VMA_DEP_DIR) $(GLM_DEP_DIR) $(SDL_DEP_DIR) $(OBJS_DIR)/.compile_start
 $(OBJS_DIR)/.compile_start: $(SRCS)
 	@printf "$(BOLD)Compiling$(RESET)\n"
 	@touch $@
@@ -76,6 +81,16 @@ $(VOLK_DEP_DIR): | $(DEPS_DIR)
 	@rm $(DEPS_DIR)/volk.tar.gz
 	@printf "$(GREEN)  ✓ Done$(RESET)\n"
 
+$(VMA_DEP_DIR): | $(DEPS_DIR)
+	@printf "$(BOLD)Downloading VMA $(VMA_VER)$(RESET)\n"
+	@printf "$(GRAY)  Fetching archive...$(RESET)" && \
+	 curl -sL $(VMA_URL) -o $(DEPS_DIR)/vma.tar.gz && \
+	 printf "$(ERASE)"
+	@printf "$(GRAY)  Extracting...$(RESET)" && \
+	 tar -xzf $(DEPS_DIR)/vma.tar.gz -C $(DEPS_DIR) && \
+	 printf "$(ERASE)"
+	@rm $(DEPS_DIR)/vma.tar.gz
+	@printf "$(GREEN)  ✓ Done$(RESET)\n"
 
 $(GLM_DEP_DIR): | $(DEPS_DIR)
 	@printf "$(BOLD)Downloading GLM $(GLM_VER)$(RESET)\n"
