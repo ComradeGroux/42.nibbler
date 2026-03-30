@@ -183,7 +183,7 @@ void	Snake::start(void)
 {
 	_level.generateFood();
 
-	t_keycode	input = E_KEY_UP;
+	t_keycode	input = E_NOTHING;
 	while (input != E_KEY_ESC)
 		_update(input);
 }

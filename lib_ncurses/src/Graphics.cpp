@@ -88,24 +88,35 @@ t_keycode	Graphics::getInput(void)
 {
 	int	c = getch();
 
-	if (c == KEY_EXIT)
-		return E_KEY_ESC;
-	else if (c == 27)
-		return E_KEY_ESC;
-	else if (c == '1')
-		return E_KEY_ONE;
-	else if (c == '2')
-		return E_KEY_TWO;
-	else if (c == '3')
-		return E_KEY_THREE;
-	else if (c == KEY_UP || c == 'w' || c == 'W')
-		return E_KEY_UP;
-	else if (c == KEY_RIGHT || c == 'd' || c == 'D')
-		return E_KEY_RIGHT;
-	else if (c == KEY_DOWN || c == 's' || c == 'S')
-		return E_KEY_DOWN;
-	else if (c == KEY_LEFT || c == 'a' || c == 'A')
-		return E_KEY_LEFT;
+	switch (c)
+	{
+		case KEY_EXIT:
+		case 27:
+			return E_KEY_ESC;
+		case '1':
+			return E_KEY_ONE;
+		case '2':
+			return E_KEY_TWO;
+		case '3':
+			return E_KEY_THREE;
+		case KEY_UP:
+		case 'w':
+		case 'W':
+			return E_KEY_UP;
+		case KEY_RIGHT:
+		case 'd':
+		case 'D':
+			return E_KEY_RIGHT;
+		case KEY_DOWN:
+		case 's':
+		case 'S':
+			return E_KEY_DOWN;
+		case KEY_LEFT:
+		case 'a':
+		case 'A':
+			return E_KEY_LEFT;
 
-	return E_NOTHING;
+		default:
+			return E_NOTHING;
+	}
 }
