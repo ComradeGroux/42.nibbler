@@ -119,7 +119,7 @@ $(SPVS_HEADER_DIR):
 $(SPVS_DIR)/%.spv: $(SHADER_DIR)/% | glslc_ready $(SPVS_DIR) $(SPVS_HEADER_DIR)
 	@printf "$(GRAY)  Compiling shader $<...$(RESET)" && \
 	 $(GLSLC) $< -o $@ && \
-	 xxd -i $< > $(addsuffix ".h", $(addprefix $(SPVS_HEADER_DIR)/, $(notdir $<))) && \
+	 xxd -i $@ > $(addsuffix ".h", $(addprefix $(SPVS_HEADER_DIR)/, $(notdir $<))) && \
 	 printf "$(ERASE)$(GREEN)  ✓ $<$(RESET)\n"
 
 
