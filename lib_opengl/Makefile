@@ -104,7 +104,7 @@ $(GLM_DEP_DIR): | $(DEPS_DIR)
 	@printf "$(GREEN)  ✓ Done$(RESET)\n"
 
 $(GLAD_DEP_DIR): | $(DEPS_DIR)
-	@printf "$(BOLD)GLAD (OpenGL 4.6 core)$(RESET)\n"
+	@printf "$(BOLD)Downloading GLAD (OpenGL 4.6 core)$(RESET)\n"
 	@printf "$(GRAY)  Setting up virtual env...$(RESET)" && \
 	 python3 -m venv $(DEPS_DIR)/.venv > /dev/null 2>&1 && \
 	 printf "$(ERASE)"
