@@ -57,6 +57,8 @@ Graphics::Graphics(void)
 
 Graphics::~Graphics(void)
 {
+	vkDeviceWaitIdle(_device);
+
 	vkDestroyPipeline(_device, _pipeline, nullptr);
 	vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
 	for (uint32_t i = 0; i < _maxFramesInFlight; i++)
@@ -189,9 +191,14 @@ void	Graphics::_createVkDeviceAndQueue(void)
 
 	const char*	layers[] = { "VK_LAYER_KHRONOS_validation" };
 	const char*	deviceExtensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	VkPhysicalDeviceSynchronization2Features	sync2Features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+		.pNext = VK_NULL_HANDLE,
+		.synchronization2 = VK_TRUE
+	};
 	VkPhysicalDeviceDynamicRenderingFeatures	dynamicRendering = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-		.pNext = nullptr,
+		.pNext = &sync2Features,
 		.dynamicRendering = VK_TRUE
 	};
 	VkDeviceCreateInfo	deviceCI{
@@ -291,6 +298,9 @@ void	Graphics::_createWindowAndSurface(void)
 		throw std::runtime_error(SDL_GetError());
 
 	if (!SDL_GetWindowSize(_window, &_windowSize.x, &_windowSize.y))
+		throw std::runtime_error(SDL_GetError());
+
+	if (!SDL_ShowWindow(_window))
 		throw std::runtime_error(SDL_GetError());
 }
 
@@ -425,7 +435,7 @@ void	Graphics::_createPipeline(void)
 		.pName = "main",
 		.pSpecializationInfo = VK_NULL_HANDLE
 	};
-	const VkPipelineShaderStageCreateInfo shaderStages[] = { vertStageInfo, fragStageInfo };
+	const VkPipelineShaderStageCreateInfo	shaderStages[] = { vertStageInfo, fragStageInfo };
 
 	VkPushConstantRange pushConstantRange = {
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
@@ -564,6 +574,124 @@ void	Graphics::_createPipeline(void)
 void	Graphics::render(const Level& lvl)
 {
 	(void)lvl;
+
+	vkWaitForFences(_device, 1, &_fenInFlight[_currentFrame], VK_TRUE, UINT64_MAX);
+	vkResetFences(_device, 1, &_fenInFlight[_currentFrame]);
+
+	uint32_t	imageIndex;
+	chk(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _semImageAvailable[_currentFrame], VK_NULL_HANDLE, &imageIndex));
+
+	VkCommandBuffer	cmdBuff = _commandBuffers[_currentFrame];
+	chk(vkResetCommandBuffer(cmdBuff, 0));
+	VkCommandBufferBeginInfo	cmdBeginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.pInheritanceInfo = VK_NULL_HANDLE
+	};
+	chk(vkBeginCommandBuffer(cmdBuff, &cmdBeginInfo));
+
+	VkImageMemoryBarrier2	imageMemoryBarrier[] = {
+		{
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+			.pNext = VK_NULL_HANDLE,
+			.srcStageMask = 0,
+			.srcAccessMask = 0,
+			.dstStageMask = 0,
+			.dstAccessMask = 0,
+			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.srcQueueFamilyIndex = 0,
+			.dstQueueFamilyIndex = 0,
+			.image = _swapchainImages[imageIndex],
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = VK_REMAINING_MIP_LEVELS,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			},
+		}
+	};
+	const VkDependencyInfo	dependecyInfo = {
+		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.dependencyFlags = 0,
+		.memoryBarrierCount = 0,
+		.pMemoryBarriers = VK_NULL_HANDLE,
+		.bufferMemoryBarrierCount = 0,
+		.pBufferMemoryBarriers = VK_NULL_HANDLE,
+		.imageMemoryBarrierCount = 1,
+		.pImageMemoryBarriers = imageMemoryBarrier,
+	};
+	vkCmdPipelineBarrier2(cmdBuff, &dependecyInfo);
+
+	const VkRenderingAttachmentInfo	renderingAttachmentInfo = {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+		.pNext = VK_NULL_HANDLE,
+		.imageView = _swapchainImageViews[imageIndex],
+		.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+		.resolveMode = {},
+		.resolveImageView = {},
+		.resolveImageLayout = {},
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.clearValue = { .color = { 0.2f, 0.4f, 0.6, 1.0f } },
+	};
+	const VkRenderingInfo	renderingInfo = {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+		.pNext = VK_NULL_HANDLE,
+		.flags = {},
+		.renderArea = { { 0, 0 }, { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) } },
+		.layerCount = 1,
+		.viewMask = 0,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &renderingAttachmentInfo,
+		.pDepthAttachment = VK_NULL_HANDLE,
+		.pStencilAttachment = VK_NULL_HANDLE,
+	};
+	vkCmdBeginRendering(cmdBuff, &renderingInfo);
+	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+
+	/**
+	 * PUSH DES UNIFORM
+	 */
+
+	vkCmdEndRendering(cmdBuff);
+
+	imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	vkCmdPipelineBarrier2(cmdBuff, &dependecyInfo);
+
+	vkEndCommandBuffer(cmdBuff);
+
+	const VkPipelineStageFlags	waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	const VkSubmitInfo	submitInfo = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &_semImageAvailable[_currentFrame],
+		.pWaitDstStageMask = &waitStages,
+		.commandBufferCount = 1,
+		.pCommandBuffers = &cmdBuff,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores = &_semRenderFinished[_currentFrame],
+	};
+	vkQueueSubmit(_queue, 1, &submitInfo, _fenInFlight[_currentFrame]);
+
+	const VkPresentInfoKHR	presentInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.pNext = VK_NULL_HANDLE,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores = &_semRenderFinished[_currentFrame],
+		.swapchainCount = 1,
+		.pSwapchains = &_swapchain,
+		.pImageIndices = &imageIndex,
+		.pResults = VK_NULL_HANDLE,
+	};
+	vkQueuePresentKHR(_queue, &presentInfo);
+
+	_currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
 }
 
 t_keycode		Graphics::getInput(void)
