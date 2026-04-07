@@ -138,6 +138,7 @@ fclean: clean
 dclean: fclean
 	@printf "$(GRAY)  Removing $(DEPS_DIR)...$(RESET)" && \
 	 rm -rf $(DEPS_DIR) && \
+	 rm -rf .venv && \
 	 printf "$(ERASE)"
 	@printf "$(GREEN)  ✓ Dependencies cleaned$(RESET)\n"
 
