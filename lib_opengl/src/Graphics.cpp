@@ -71,7 +71,6 @@ Graphics::~Graphics(void)
 	glfwTerminate();
 }
 
-
 static GLuint	compileShader(GLenum type, const char* path)
 {
 	std::ifstream	file(path);

@@ -90,24 +90,3 @@ void	Level::generateFood(void)
 
 	setCell(x, y, E_FOOD);
 }
-
-#include <iostream>
-#include "ANSI-color-codes.h"
-void	Level::render(void) const
-{
-	for (int y = 0; y < _height; y++)
-	{
-		for (int x = 0; x < _width; x++)
-		{
-			if (getCell(x, y) == E_WALL)
-				std::cout << BLUB << "W" << CRESET;
-			else if (getCell(x, y) == E_EMPTY)
-				std::cout << YEL << "." << CRESET;
-			else if (getCell(x, y) == E_SNAKE)
-				std::cout << GRNB << "S" << CRESET;
-			else if (getCell(x, y) == E_FOOD)
-				std::cout << REDHB << "F" << CRESET;
-		}
-		std::cout << std::endl;
-	}
-}
