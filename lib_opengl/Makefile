@@ -37,7 +37,7 @@ INCLUDES := -I$(INCLUDE_DIR)           \
             -I$(GLAD_DEP_DIR)/include  \
             -I$(GLFW_DEP_DIR)/include  \
             -I../include
-LDFLAGS  := -shared -ldl -lm -lGL -lX11 -lXrandr -lXi
+LDFLAGS  := -shared -ldl -lm -lGL -lX11 -lXrandr -lXi -Wl,--version-script=exports.map
 
 all: $(TARGET)
 

@@ -21,7 +21,7 @@ CXX 		:= g++
 CXXFLAGS	:= -Wall -Wextra -Werror -fPIC
 INCLUDES	:= -I$(INCLUDE_DIR) \
 			   -I../include
-LDFLAGS		:= -shared -lncurses
+LDFLAGS		:= -shared -lncurses -Wl,--version-script=exports.map
 
 all: $(TARGET)
 

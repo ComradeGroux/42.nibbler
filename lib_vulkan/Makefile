@@ -57,18 +57,12 @@ GLSLC_LOCAL			:= $(SHADERC_BUILD_DIR)/glslc/glslc
 GLSLC_LOCAL_EXIST	:= $(shell find $(SHADERC_BUILD_DIR) -name "glslc" -type f -executable 2>/dev/null)
 GLSLC_SYSTEM		:= $(shell which glslc 2>/dev/null)
 
-# SPIRV_TOOLS_VER		:= 2026.1
-# SPIRV_TOOLS_URL		:= https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags/v$(SPIRV_TOOLS_VER).tar.gz
 SPIRV_TOOLS_REV		:= fbe4f3ad913c44fe8700545f8ffe35d1382b7093
 SPIRV_TOOLS_URL		:= https://github.com/KhronosGroup/SPIRV-Tools/archive/$(SPIRV_TOOLS_REV).tar.gz
 
-# SPIRV_HEADERS_VER	:= 1.3.296.0
-# SPIRV_HEADERS_URL	:= https://github.com/KhronosGroup/SPIRV-Headers/archive/refs/tags/vulkan-sdk-$(SPIRV_HEADERS_VER).tar.gz
 SPIRV_HEADERS_REV	:= 04f10f650d514df88b76d25e83db360142c7b174
 SPIRV_HEADERS_URL	:= https://github.com/KhronosGroup/SPIRV-Headers/archive/$(SPIRV_HEADERS_REV).tar.gz
 
-# GLSLANG_VER			:= 15.1.0
-# GLSLANG_URL			:= https://github.com/KhronosGroup/glslang/archive/refs/tags/$(GLSLANG_VER).tar.gz
 GLSLANG_REV			:= f0bd0257c308b9a26562c1a30c4748a0219cc951
 GLSLANG_URL			:= https://github.com/KhronosGroup/glslang/archive/$(GLSLANG_REV).tar.gz
 
@@ -116,6 +110,7 @@ $(SPVS_DIR):
 	@mkdir -p $@
 $(SPVS_HEADER_DIR):
 	@mkdir -p $@
+	@printf "$(BOLD)Compiling SPIRV shaders$(RESET)\n"
 $(SPVS_DIR)/%.spv: $(SHADER_DIR)/% | glslc_ready $(SPVS_DIR) $(SPVS_HEADER_DIR)
 	@printf "$(GRAY)  Compiling shader $<...$(RESET)" && \
 	 $(GLSLC) $< -o $@ && \
@@ -277,33 +272,33 @@ $(SHADERC_DEP_DIR): | $(DEPS_DIR)
 	 curl -sL $(SHADERC_URL) -o $(DEPS_DIR)/shaderc.tar.gz && \
 	 tar -xzf $(DEPS_DIR)/shaderc.tar.gz -C $(DEPS_DIR) && \
 	 rm $(DEPS_DIR)/shaderc.tar.gz && \
-	 printf "$(ERASE)"
+	 printf "$(ERASE)$(GREEN)  ✓ Done$(RESET)\n"
 
+	@printf "$(BOLD)Downloading SHADERC's dependencies$(RESET)\n"
 	@printf "$(GRAY)  Fetching glslang...$(RESET)" && \
 	 curl -sL $(GLSLANG_URL) -o $(DEPS_DIR)/glslang.tar.gz && \
 	 tar -xzf $(DEPS_DIR)/glslang.tar.gz -C $(DEPS_DIR) && \
 	 mv $(DEPS_DIR)/glslang-$(GLSLANG_REV) $(SHADERC_DEP_DIR)/third_party/glslang && \
 	 rm $(DEPS_DIR)/glslang.tar.gz && \
-	 printf "$(ERASE)"
+	 printf "$(ERASE)$(GREEN)  ✓ glslang$(RESET)\n"
 
 	@printf "$(GRAY)  Fetching SPIRV-Tools...$(RESET)" && \
 	 curl -sL $(SPIRV_TOOLS_URL) -o $(DEPS_DIR)/spirv-tools.tar.gz && \
 	 tar -xzf $(DEPS_DIR)/spirv-tools.tar.gz -C $(DEPS_DIR) && \
 	 mv $(DEPS_DIR)/SPIRV-Tools-$(SPIRV_TOOLS_REV) $(SHADERC_DEP_DIR)/third_party/spirv-tools && \
 	 rm $(DEPS_DIR)/spirv-tools.tar.gz && \
-	 printf "$(ERASE)"
+	 printf "$(ERASE)$(GREEN)  ✓ spirv-tools$(RESET)\n"
 
 	@printf "$(GRAY)  Fetching SPIRV-Headers...$(RESET)" && \
 	 curl -sL $(SPIRV_HEADERS_URL) -o $(DEPS_DIR)/spirv-headers.tar.gz && \
 	 tar -xzf $(DEPS_DIR)/spirv-headers.tar.gz -C $(DEPS_DIR) && \
 	 mv $(DEPS_DIR)/SPIRV-Headers-$(SPIRV_HEADERS_REV) $(SHADERC_DEP_DIR)/third_party/spirv-headers && \
 	 rm $(DEPS_DIR)/spirv-headers.tar.gz && \
-	 printf "$(ERASE)"
-	@printf "$(GREEN)  ✓ Done$(RESET)\n"
+	 printf "$(ERASE)$(GREEN)  ✓ spirv-headers$(RESET)\n"
 
 
 $(GLSLC_LOCAL): $(SHADERC_DEP_DIR)
-	@printf "$(BOLD)Building GLSLC $(SHADERC_VER)$(RESET)\n"
+	@printf "$(BOLD)Building SHADERC $(SHADERC_VER)$(RESET)\n"
 	@mkdir -p $(SHADERC_BUILD_DIR)
 	@printf "$(GRAY)  Configuring cmake...$(RESET)" && \
 	 cmake -S $(SHADERC_DEP_DIR) -B $(SHADERC_BUILD_DIR) \
@@ -314,7 +309,7 @@ $(GLSLC_LOCAL): $(SHADERC_DEP_DIR)
 		-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
 		> /dev/null 2>&1 && \
 	 printf "$(ERASE)"
-	@printf "$(GRAY)  Compiling GLSLC... (can take several minutes)$(RESET)" && \
+	@printf "$(GRAY)  Compiling SHADERC... (can take several minutes)$(RESET)" && \
 	 $(MAKE) -C $(SHADERC_BUILD_DIR) glslc_exe -j$(shell nproc) --no-print-directory > /dev/null 2>&1 && \
 	 printf "$(ERASE)"
 	@printf "$(GREEN)  ✓ Done$(RESET)\n"

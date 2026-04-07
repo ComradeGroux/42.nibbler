@@ -638,7 +638,7 @@ void	Graphics::render(const Level& lvl)
 				.levelCount = VK_REMAINING_MIP_LEVELS,
 				.baseArrayLayer = 0,
 				.layerCount = 1,
-			},
+			}
 		}
 	};
 	const VkDependencyInfo	dependecyInfo = {
@@ -756,7 +756,7 @@ t_keycode		Graphics::getInput(void)
 	{
 		if (event.type == SDL_EVENT_QUIT)
 			return E_KEY_ESC;
-		if (event.type == SDL_EVENT_KEY_DOWN)
+		else if (event.type == SDL_EVENT_KEY_DOWN)
 		{
 			switch (event.key.key)
 			{
