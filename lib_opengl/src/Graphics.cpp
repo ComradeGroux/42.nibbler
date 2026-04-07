@@ -202,7 +202,7 @@ t_keycode		Graphics::getInput(void)
 {
 	glfwPollEvents();
 
-	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	if (glfwGetKey(_window, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(_window))
 		return E_KEY_ESC;
 	else if (glfwGetKey(_window, GLFW_KEY_1) == GLFW_PRESS)
 		return E_KEY_ONE;
