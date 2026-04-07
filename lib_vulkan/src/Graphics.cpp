@@ -299,9 +299,6 @@ void	Graphics::_createWindowAndSurface(void)
 
 	if (!SDL_GetWindowSize(_window, &_windowSize.x, &_windowSize.y))
 		throw std::runtime_error(SDL_GetError());
-
-	if (!SDL_ShowWindow(_window))
-		throw std::runtime_error(SDL_GetError());
 }
 
 void	Graphics::_createSwapchain(void)
@@ -571,10 +568,41 @@ void	Graphics::_createPipeline(void)
 	vkDestroyShaderModule(_device, shaderFragment, nullptr);
 }
 
+static glm::vec4	pickCellColor(Level::t_cell cell)
+{
+	glm::vec4	color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	switch (cell)
+	{
+		case Level::E_WALL:
+			color.r = 1.0f;
+			color.g = 1.0f;
+			color.b = 1.0f;
+			break;
+		case Level::E_EMPTY:
+			color.r = 0.1f;
+			color.g = 0.1f;
+			color.b = 0.1f;
+			break;
+		case Level::E_SNAKE:
+			color.r = 0.2f;
+			color.g = 0.9f;
+			color.b = 0.2f;
+			break;
+		case Level::E_FOOD:
+			color.r = 1.0f;
+			color.g = 0.2f;
+			color.b = 0.2f;
+			break;
+		default:
+			break;
+	}
+
+	return color;
+}
+
 void	Graphics::render(const Level& lvl)
 {
-	(void)lvl;
-
 	vkWaitForFences(_device, 1, &_fenInFlight[_currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(_device, 1, &_fenInFlight[_currentFrame]);
 
@@ -636,7 +664,7 @@ void	Graphics::render(const Level& lvl)
 		.resolveImageLayout = {},
 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		.clearValue = { .color = { 0.2f, 0.4f, 0.6, 1.0f } },
+		.clearValue = { .color = { 0.1f, 0.1f, 0.1f, 1.0f } },
 	};
 	const VkRenderingInfo	renderingInfo = {
 		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
@@ -653,9 +681,35 @@ void	Graphics::render(const Level& lvl)
 	vkCmdBeginRendering(cmdBuff, &renderingInfo);
 	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
-	/**
-	 * PUSH DES UNIFORM
-	 */
+	VkViewport	viewport = {
+		.x = 0,
+		.y = 0,
+		.width = static_cast<float>(_windowSize.x),
+		.height = static_cast<float>(_windowSize.y),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+	vkCmdSetViewport(cmdBuff, 0, 1, &viewport);
+
+	VkRect2D	scissor = {
+		.offset = { 0, 0 },
+		.extent = { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) }
+	};
+	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
+
+	for (int x = 0; x < lvl.getWidth(); x++)
+	{
+		for (int y = 0; y < lvl.getHeight(); y++)
+		{
+			PushConstants	constants = {
+				.gridPos = { x, y },
+				.gridSize = { lvl.getWidth(), lvl.getHeight() },
+				.color = pickCellColor(lvl.getCell(x, y)),
+				.ratio = static_cast<float>(lvl.getWidth()) / static_cast<float>(lvl.getHeight()),
+			};
+			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
+		}
+	}
 
 	vkCmdEndRendering(cmdBuff);
 
