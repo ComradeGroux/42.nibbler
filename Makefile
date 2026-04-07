@@ -74,8 +74,7 @@ $(LIB3):
 	@$(MAKE) -sC $(@D)
 
 
-
-libclean:
+clean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB1_DIR) clean
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
@@ -83,14 +82,13 @@ libclean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB3_DIR) clean
 
-clean: libclean
 	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET) objects...$(RESET)\n"
 	@printf "$(GRAY)  Removing build objects...$(RESET)" && \
 	 rm -rf $(OBJS_DIR) && \
 	 printf "$(ERASE)"
 	@printf "$(GREEN)  ✓ Build files cleaned$(RESET)\n"
 
-libfclean:
+fclean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB1_DIR) fclean
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
@@ -98,7 +96,6 @@ libfclean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB3_DIR) fclean
 
-fclean: libfclean
 	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET)...$(RESET)\n"
 	@printf "$(GRAY)  Removing $(BUILD_DIR)...$(RESET)" && \
 	 rm -rf $(BUILD_DIR) && \
@@ -109,7 +106,7 @@ fclean: libfclean
 	 printf "$(ERASE)"
 	@printf "$(GREEN)  ✓ $(TARGET) cleaned$(RESET)\n"
 
-libdclean:
+dclean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB1_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB1_DIR) dclean
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB2_DIR)...$(RESET)\n"
@@ -117,7 +114,6 @@ libdclean:
 	@printf "$(BOLD)$(BLUE)Cleaning $(LIB3_DIR)...$(RESET)\n"
 	@$(MAKE) -sC $(LIB3_DIR) dclean
 
-dclean: libdclean
 	@printf "$(BOLD)$(BLUE)Cleaning $(TARGET)...$(RESET)\n"
 	@printf "$(GRAY)  Removing $(BUILD_DIR)...$(RESET)" && \
 	 rm -rf $(BUILD_DIR) && \
@@ -136,4 +132,4 @@ seperate:
 	@printf	"\n"
 re: fclean seperate all
 
-.PHONY: all libclean clean libfclean fclean libdclean dclean re
+.PHONY: all clean fclean dclean re
