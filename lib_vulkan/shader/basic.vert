@@ -1,9 +1,9 @@
 #version 460
 
 layout(push_constant) uniform uPushConstant {
+	vec4	color;
 	vec2	gridPos;
 	vec2	gridSize;
-	vec4	color;
 	float	ratio;
 } pc;
 
@@ -20,17 +20,20 @@ vec2 pos[6] = vec2[](
 
 void main()
 {
-	float	cellWidth  = 2.0 / pc.gridSize.x;
+	float	cellWidth = 2.0 / pc.gridSize.x;
 	float	cellHeight = 2.0 / pc.gridSize.y;
 	float	gridRatio = pc.gridSize.x / pc.gridSize.y;
 
 	if (gridRatio <= pc.ratio)
 		cellWidth = cellHeight / pc.ratio;
 	else
-		cellHeight = cellWidth / pc.ratio;
+		cellHeight = cellWidth * pc.ratio;
 
-	float	x = -1.0 + (pc.gridPos.x + pos[gl_VertexIndex].x) * cellWidth;
-	float	y = -1.0 + (pc.gridPos.y + pos[gl_VertexIndex].y) * cellHeight;
+	float	offsetX = (2.0 - (cellWidth * pc.gridSize.x)) / 2.0;
+	float	offsetY = (2.0 - (cellHeight * pc.gridSize.y)) / 2.0;
+
+	float	x = -1.0 + offsetX + (pc.gridPos.x + pos[gl_VertexIndex].x) * cellWidth;
+	float	y = -1.0 + offsetY + (pc.gridPos.y + pos[gl_VertexIndex].y) * cellHeight;
 
 	gl_Position = vec4(x, y, 0.0, 1.0);
 	color = pc.color;

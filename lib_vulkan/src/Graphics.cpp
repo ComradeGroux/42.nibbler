@@ -30,9 +30,9 @@ static inline void	chk(VkResult result)
 }
 
 struct PushConstants {
+	glm::vec4	color;
 	glm::vec2	gridPos;
 	glm::vec2	gridSize;
-	glm::vec4	color;
 	float		ratio;
 };
 
@@ -460,7 +460,6 @@ void	Graphics::_createPipeline(void)
 	};
 	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
 
-
 	const VkPipelineInputAssemblyStateCreateInfo	pipelineInputAssemblyStateCI = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
@@ -714,10 +713,10 @@ void	Graphics::render(const Level& lvl)
 		for (int y = 0; y < gridHeight; y++)
 		{
 			PushConstants	constants = {
+				.color = pickCellColor(lvl.getCell(x, y)),
 				.gridPos = { x, y },
 				.gridSize = { gridWidth, gridHeight },
-				.color = pickCellColor(lvl.getCell(x, y)),
-				.ratio = ratio,
+				.ratio = ratio
 			};
 			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
 			vkCmdDraw(cmdBuff, 6, 1, 0, 0);
