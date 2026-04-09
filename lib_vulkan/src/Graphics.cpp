@@ -29,11 +29,15 @@ static inline void	chk(VkResult result)
 	}
 }
 
-struct PushConstants {
-	glm::vec4	color;
+struct PushConstantsVert {
 	glm::vec2	gridPos;
 	glm::vec2	gridSize;
 	float		ratio;
+	float		_pad[3];
+};
+
+struct PushConstantsFrag {
+	glm::vec4	color;
 };
 
 Graphics::Graphics(void)
@@ -445,10 +449,17 @@ void	Graphics::_createPipeline(void)
 	};
 	const VkPipelineShaderStageCreateInfo	shaderStages[] = { vertStageInfo, fragStageInfo };
 
-	VkPushConstantRange pushConstantRange = {
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-		.offset = 0,
-		.size = sizeof(PushConstants)
+	VkPushConstantRange pushConstantRange[] = {
+		{
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0,
+			.size = sizeof(PushConstantsVert)
+		},
+		{
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.offset = sizeof(PushConstantsVert),
+			.size = sizeof(PushConstantsFrag)
+		}
 	};
 
 	const VkPipelineLayoutCreateInfo	pipelineLayoutCI = {
@@ -457,8 +468,8 @@ void	Graphics::_createPipeline(void)
 		.flags = {},
 		.setLayoutCount = 0,
 		.pSetLayouts = VK_NULL_HANDLE,
-		.pushConstantRangeCount = 1,
-		.pPushConstantRanges = &pushConstantRange
+		.pushConstantRangeCount = 2,
+		.pPushConstantRanges = pushConstantRange
 	};
 	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
 
@@ -714,13 +725,17 @@ void	Graphics::render(const Level& lvl)
 	{
 		for (int y = 0; y < gridHeight; y++)
 		{
-			PushConstants	constants = {
-				.color = pickCellColor(lvl.getCell(x, y)),
+			PushConstantsVert	constants = {
 				.gridPos = { x, y },
 				.gridSize = { gridWidth, gridHeight },
-				.ratio = ratio
+				.ratio = ratio,
+				._pad = { 0.0f, 0.0f, 0.0f }
+			};
+			PushConstantsFrag	color = {
+				.color = pickCellColor(lvl.getCell(x, y))
 			};
 			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
+			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(constants), sizeof(color), &color);
 			vkCmdDraw(cmdBuff, 6, 1, 0, 0);
 		}
 	}

@@ -1,13 +1,11 @@
 #version 460
 
-layout(push_constant) uniform uPushConstant {
-	vec4	color;
+layout(push_constant) uniform uPushConstantVert {
 	vec2	gridPos;
 	vec2	gridSize;
 	float	ratio;
+	float	_pad[3];
 } pc;
-
-layout(location = 0) out vec4 color;
 
 vec2 pos[6] = vec2[](
 	vec2(0.0, 0.0),
@@ -36,5 +34,4 @@ void main()
 	float	y = -1.0 + offsetY + (pc.gridPos.y + pos[gl_VertexIndex].y) * cellHeight;
 
 	gl_Position = vec4(x, y, 0.0, 1.0);
-	color = pc.color;
 }
