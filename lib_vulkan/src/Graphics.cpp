@@ -306,7 +306,7 @@ void	Graphics::_createWindowAndSurface(void)
 	if (!SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface))
 		throw std::runtime_error(SDL_GetError());
 
-	if (!SDL_GetWindowSize(_window, &_windowSize.x, &_windowSize.y))
+	if (!SDL_GetWindowSizeInPixels(_window, &_windowSize.x, &_windowSize.y))
 		throw std::runtime_error(SDL_GetError());
 }
 
@@ -632,10 +632,10 @@ void	Graphics::render(const Level& lvl)
 		{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
 			.pNext = VK_NULL_HANDLE,
-			.srcStageMask = 0,
-			.srcAccessMask = 0,
-			.dstStageMask = 0,
-			.dstAccessMask = 0,
+			.srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+			.srcAccessMask = VK_ACCESS_2_NONE,
+			.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.srcQueueFamilyIndex = 0,
@@ -706,20 +706,21 @@ void	Graphics::render(const Level& lvl)
 	};
 	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
 
-	const int	width = lvl.getWidth();
-	const int	height = lvl.getHeight();
-	const float	ratio = static_cast<float>(width) / static_cast<float>(height);
-	for (int x = 0; x < width; x++)
+	const int	gridWidth = lvl.getWidth();
+	const int	gridHeight = lvl.getHeight();
+	const float	ratio = static_cast<float>(_windowSize.x) / static_cast<float>(_windowSize.y);
+	for (int x = 0; x < gridWidth; x++)
 	{
-		for (int y = 0; y < height; y++)
+		for (int y = 0; y < gridHeight; y++)
 		{
 			PushConstants	constants = {
 				.gridPos = { x, y },
-				.gridSize = { width, height },
+				.gridSize = { gridWidth, gridHeight },
 				.color = pickCellColor(lvl.getCell(x, y)),
 				.ratio = ratio,
 			};
 			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
+			vkCmdDraw(cmdBuff, 6, 1, 0, 0);
 		}
 	}
 
@@ -727,6 +728,10 @@ void	Graphics::render(const Level& lvl)
 
 	imageMemoryBarrier[0].oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	imageMemoryBarrier[0].newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	imageMemoryBarrier[0].srcStageMask  = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+	imageMemoryBarrier[0].srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+	imageMemoryBarrier[0].dstStageMask  = VK_PIPELINE_STAGE_2_NONE;
+	imageMemoryBarrier[0].dstAccessMask = VK_ACCESS_2_NONE;
 	vkCmdPipelineBarrier2(cmdBuff, &dependecyInfo);
 
 	vkEndCommandBuffer(cmdBuff);
