@@ -32,14 +32,10 @@ static inline void	chk(VkResult result)
 }
 
 struct PushConstantsVertUI {
-	float	height;
-	float	closeButtonWidth;
-	float	_pad[2];
-};
-
-struct PushConstantsFragUI {
-	glm::vec4	barColor;
-	glm::vec4	closeButtonColor;
+	glm::vec4	color;
+	float		height;
+	float		closeButtonWidth;
+	bool		isButton;
 };
 
 struct PushConstantsVertGame {
@@ -468,17 +464,10 @@ void	Graphics::_createUIPipeline(void)
 	};
 	const VkPipelineShaderStageCreateInfo	shaderStages[] = { vertStageInfo, fragStageInfo };
 
-	VkPushConstantRange pushConstantRange[] = {
-		{
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-			.offset = 0,
-			.size = sizeof(PushConstantsVertUI)
-		},
-		{
-			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.offset = sizeof(PushConstantsVertUI),
-			.size = sizeof(PushConstantsFragUI)
-		}
+	VkPushConstantRange pushConstantRange = {
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.offset = 0,
+		.size = sizeof(PushConstantsVertUI)
 	};
 
 	const VkPipelineLayoutCreateInfo	pipelineLayoutCI = {
@@ -487,8 +476,8 @@ void	Graphics::_createUIPipeline(void)
 		.flags = {},
 		.setLayoutCount = 0,
 		.pSetLayouts = VK_NULL_HANDLE,
-		.pushConstantRangeCount = 2,
-		.pPushConstantRanges = pushConstantRange
+		.pushConstantRangeCount = 1,
+		.pPushConstantRanges = &pushConstantRange
 	};
 	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayouts[E_PIPELINE_UI]));
 
@@ -839,16 +828,17 @@ void	Graphics::_renderUI(VkCommandBuffer cmdBuff)
 	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
 
 	PushConstantsVertUI constants = {
+		.color = { 0.2f, 0.2f, 0.2f, 1.0f },
 		.height = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
 		.closeButtonWidth = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
-		._pad = { 0.0f, 0.0f }
-	};
-	PushConstantsFragUI colors = {
-		.barColor = { 0.7f, 0.7f, 0.7f, 1.0f },
-		.closeButtonColor = { 0.8f, 0.1f, 0.1f, 1.0f }
+		.isButton = false
 	};
 	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
-	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, sizeof(constants), sizeof(colors), &colors);
+	vkCmdDraw(cmdBuff, 6, 1, 0, 0);
+
+	constants.color = { 0.8f, 0.2f, 0.2f, 1.0f };
+	constants.isButton = true;
+	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
 	vkCmdDraw(cmdBuff, 6, 1, 0, 0);
 }
 
