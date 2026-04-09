@@ -19,8 +19,10 @@ SPVS_HEADER_DIR := $(BUILD_DIR)/shaders-include
 SRCS		:= $(wildcard $(SRC_DIR)/*.cpp)
 VPATH		:= $(dir $(SRCS))
 OBJS		:= $(addprefix $(OBJS_DIR)/, $(notdir $(SRCS:.cpp=.o)))
-SHADER_SRCS := shader/basic.frag \
-			   shader/basic.vert
+SHADER_SRCS := shader/ui.frag \
+			   shader/ui.vert \
+			   shader/game.frag \
+			   shader/game.vert
 SHADER_SPVS := $(patsubst $(SHADER_DIR)/%, $(SPVS_DIR)/%.spv, $(SHADER_SRCS))
 
 

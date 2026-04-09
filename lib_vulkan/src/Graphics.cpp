@@ -1,7 +1,9 @@
 #include "Graphics.hpp"
 
-#include "basic.vert.h"
-#include "basic.frag.h"
+#include "ui.vert.h"
+#include "ui.frag.h"
+#include "game.vert.h"
+#include "game.frag.h"
 
 #include <SDL3/SDL_vulkan.h>
 
@@ -29,14 +31,26 @@ static inline void	chk(VkResult result)
 	}
 }
 
-struct PushConstantsVert {
+struct PushConstantsVertUI {
+	float	height;
+	float	closeButtonWidth;
+	float	_pad[2];
+};
+
+struct PushConstantsFragUI {
+	glm::vec4	barColor;
+	glm::vec4	closeButtonColor;
+};
+
+struct PushConstantsVertGame {
 	glm::vec2	gridPos;
 	glm::vec2	gridSize;
 	float		ratio;
-	float		_pad[3];
+	float		decorationHeight;
+	float		_pad[2];
 };
 
-struct PushConstantsFrag {
+struct PushConstantsFragGame {
 	glm::vec4	color;
 };
 
@@ -66,8 +80,11 @@ Graphics::~Graphics(void)
 {
 	vkDeviceWaitIdle(_device);
 
-	vkDestroyPipeline(_device, _pipeline, nullptr);
-	vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
+	for (int i = 0; i < E_PIPELINE_COUNT; i++)
+	{
+		vkDestroyPipeline(_device, _pipelines[i], nullptr);
+		vkDestroyPipelineLayout(_device, _pipelineLayouts[i], nullptr);
+	}
 	for (uint32_t i = 0; i < _maxFramesInFlight; i++)
 	{
 		vkDestroySemaphore(_device, _semImageAvailable[i], nullptr);
@@ -298,22 +315,18 @@ void	Graphics::_createAllocator(void)
 
 void	Graphics::_createWindowAndSurface(void)
 {
-	_window = SDL_CreateWindow("nibbler - Vulkan", 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	_window = SDL_CreateWindow("nibbler - Vulkan", 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS);
 	if (!_window)
 		throw std::runtime_error(SDL_GetError());
 	SDL_SyncWindow(_window);
-
-	SDL_WindowFlags	flags = SDL_GetWindowFlags(_window);
-	if (flags & SDL_WINDOW_BORDERLESS)
-		_hasDecoration = true;
-	else
-		_decorationHeight = 30.0f;
 
 	if (!SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface))
 		throw std::runtime_error(SDL_GetError());
 
 	if (!SDL_GetWindowSizeInPixels(_window, &_windowSize.x, &_windowSize.y))
 		throw std::runtime_error(SDL_GetError());
+
+	SDL_SetWindowHitTest(_window, _hitTestCallback, this);
 }
 
 void	Graphics::_createSwapchain(void)
@@ -414,18 +427,24 @@ void	Graphics::_createSyncObjects(void)
 
 void	Graphics::_createPipeline(void)
 {
+	_createUIPipeline();
+	_createGamePipeline();
+}
+
+void	Graphics::_createUIPipeline(void)
+{
 	VkShaderModuleCreateInfo	shaderCI = {
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
 		.flags = {},
-		.codeSize = build_shaders_spv_basic_vert_spv_len,
-		.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_basic_vert_spv)
+		.codeSize = build_shaders_spv_ui_vert_spv_len,
+		.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_ui_vert_spv)
 	};
 	VkShaderModule	shaderVertex;
 	chk(vkCreateShaderModule(_device, &shaderCI, nullptr, &shaderVertex));
 
-	shaderCI.codeSize = build_shaders_spv_basic_frag_spv_len;
-	shaderCI.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_basic_frag_spv);
+	shaderCI.codeSize = build_shaders_spv_ui_frag_spv_len;
+	shaderCI.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_ui_frag_spv);
 	VkShaderModule	shaderFragment;
 	chk(vkCreateShaderModule(_device, &shaderCI, nullptr, &shaderFragment));
 
@@ -453,12 +472,12 @@ void	Graphics::_createPipeline(void)
 		{
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
-			.size = sizeof(PushConstantsVert)
+			.size = sizeof(PushConstantsVertUI)
 		},
 		{
 			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.offset = sizeof(PushConstantsVert),
-			.size = sizeof(PushConstantsFrag)
+			.offset = sizeof(PushConstantsVertUI),
+			.size = sizeof(PushConstantsFragUI)
 		}
 	};
 
@@ -471,7 +490,7 @@ void	Graphics::_createPipeline(void)
 		.pushConstantRangeCount = 2,
 		.pPushConstantRanges = pushConstantRange
 	};
-	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayout));
+	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayouts[E_PIPELINE_UI]));
 
 	const VkPipelineInputAssemblyStateCreateInfo	pipelineInputAssemblyStateCI = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -577,14 +596,191 @@ void	Graphics::_createPipeline(void)
 		.pDepthStencilState = VK_NULL_HANDLE,
 		.pColorBlendState = &pipelineColorBlendStateCI,
 		.pDynamicState = &pipelineDynamicStateCI,
-		.layout = _pipelineLayout,
+		.layout = _pipelineLayouts[E_PIPELINE_UI],
 		.renderPass = {},
 		.subpass = 0,
-		.basePipelineHandle = _pipeline,
+		.basePipelineHandle = _pipelines[E_PIPELINE_UI],
 		.basePipelineIndex = 0
 	};
 
-	chk(vkCreateGraphicsPipelines(_device, nullptr, 1, &graphicsPipelineCI, nullptr, &_pipeline));
+	chk(vkCreateGraphicsPipelines(_device, nullptr, 1, &graphicsPipelineCI, nullptr, &_pipelines[E_PIPELINE_UI]));
+	vkDestroyShaderModule(_device, shaderVertex, nullptr);
+	vkDestroyShaderModule(_device, shaderFragment, nullptr);
+}
+
+void	Graphics::_createGamePipeline(void)
+{
+	VkShaderModuleCreateInfo	shaderCI = {
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = {},
+		.codeSize = build_shaders_spv_game_vert_spv_len,
+		.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_game_vert_spv)
+	};
+	VkShaderModule	shaderVertex;
+	chk(vkCreateShaderModule(_device, &shaderCI, nullptr, &shaderVertex));
+
+	shaderCI.codeSize = build_shaders_spv_game_frag_spv_len;
+	shaderCI.pCode = reinterpret_cast<uint32_t *>(build_shaders_spv_game_frag_spv);
+	VkShaderModule	shaderFragment;
+	chk(vkCreateShaderModule(_device, &shaderCI, nullptr, &shaderFragment));
+
+	const VkPipelineShaderStageCreateInfo	vertStageInfo{
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.stage = VK_SHADER_STAGE_VERTEX_BIT,
+		.module = shaderVertex,
+		.pName = "main",
+		.pSpecializationInfo = VK_NULL_HANDLE
+	};
+	const VkPipelineShaderStageCreateInfo	fragStageInfo{
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+		.module = shaderFragment,
+		.pName = "main",
+		.pSpecializationInfo = VK_NULL_HANDLE
+	};
+	const VkPipelineShaderStageCreateInfo	shaderStages[] = { vertStageInfo, fragStageInfo };
+
+	VkPushConstantRange pushConstantRange[] = {
+		{
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0,
+			.size = sizeof(PushConstantsVertGame)
+		},
+		{
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+			.offset = sizeof(PushConstantsVertGame),
+			.size = sizeof(PushConstantsFragGame)
+		}
+	};
+
+	const VkPipelineLayoutCreateInfo	pipelineLayoutCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = {},
+		.setLayoutCount = 0,
+		.pSetLayouts = VK_NULL_HANDLE,
+		.pushConstantRangeCount = 2,
+		.pPushConstantRanges = pushConstantRange
+	};
+	chk(vkCreatePipelineLayout(_device, &pipelineLayoutCI, nullptr, &_pipelineLayouts[E_PIPELINE_GAME]));
+
+	const VkPipelineInputAssemblyStateCreateInfo	pipelineInputAssemblyStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+		.primitiveRestartEnable = {}
+	};
+	const VkPipelineViewportStateCreateInfo			pipelineViewportStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.viewportCount = 1,
+		.pViewports = VK_NULL_HANDLE,
+		.scissorCount = 1,
+		.pScissors = VK_NULL_HANDLE
+	};
+	const VkPipelineRasterizationStateCreateInfo	pipelineRasterizationStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.depthClampEnable = VK_FALSE,
+		.rasterizerDiscardEnable = VK_FALSE,
+		.polygonMode = VK_POLYGON_MODE_FILL,
+		.cullMode = 0,
+		.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+		.depthBiasEnable = 0,
+		.depthBiasConstantFactor = 0,
+		.depthBiasClamp = 0,
+		.depthBiasSlopeFactor = 0,
+		.lineWidth = 1.0f
+	};
+	const VkPipelineMultisampleStateCreateInfo		pipelineMultisampleStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+		.sampleShadingEnable = VK_FALSE,
+		.minSampleShading = 0,
+		.pSampleMask = VK_NULL_HANDLE,
+		.alphaToCoverageEnable = 0,
+		.alphaToOneEnable = 0
+	};
+	const VkPipelineColorBlendAttachmentState		pipelineColorBlendAttachmentState = {
+		.blendEnable = VK_FALSE,
+		.srcColorBlendFactor = {},
+		.dstColorBlendFactor = {},
+		.colorBlendOp = {},
+		.srcAlphaBlendFactor = {},
+		.dstAlphaBlendFactor = {},
+		.alphaBlendOp = {},
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
+	const VkPipelineColorBlendStateCreateInfo		pipelineColorBlendStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.logicOpEnable = VK_FALSE,
+		.logicOp = {},
+		.attachmentCount = 1,
+		.pAttachments = &pipelineColorBlendAttachmentState,
+		.blendConstants = 0
+	};
+	const VkDynamicState							dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	const VkPipelineDynamicStateCreateInfo			pipelineDynamicStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.dynamicStateCount = 2,
+		.pDynamicStates = dynamicStates
+	};
+	const VkPipelineRenderingCreateInfo				pipelineRenderingCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.viewMask = 0,
+		.colorAttachmentCount = 1,
+		.pColorAttachmentFormats = &_imageFormat,
+		.depthAttachmentFormat = VK_FORMAT_UNDEFINED,
+		.stencilAttachmentFormat = VK_FORMAT_UNDEFINED
+	};
+	const VkPipelineVertexInputStateCreateInfo		pipelineVertexInputStateCI = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.vertexBindingDescriptionCount = 0,
+		.pVertexBindingDescriptions = VK_NULL_HANDLE,
+		.vertexAttributeDescriptionCount = 0,
+		.pVertexAttributeDescriptions = VK_NULL_HANDLE
+	};
+
+	const VkGraphicsPipelineCreateInfo	graphicsPipelineCI = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.pNext = &pipelineRenderingCI,
+		.flags = {},
+		.stageCount = 2,
+		.pStages = shaderStages,
+		.pVertexInputState = &pipelineVertexInputStateCI,
+		.pInputAssemblyState = &pipelineInputAssemblyStateCI,
+		.pTessellationState = VK_NULL_HANDLE,
+		.pViewportState = &pipelineViewportStateCI,
+		.pRasterizationState = &pipelineRasterizationStateCI,
+		.pMultisampleState = &pipelineMultisampleStateCI,
+		.pDepthStencilState = VK_NULL_HANDLE,
+		.pColorBlendState = &pipelineColorBlendStateCI,
+		.pDynamicState = &pipelineDynamicStateCI,
+		.layout = _pipelineLayouts[E_PIPELINE_GAME],
+		.renderPass = {},
+		.subpass = 0,
+		.basePipelineHandle = _pipelines[E_PIPELINE_GAME],
+		.basePipelineIndex = 0
+	};
+
+	chk(vkCreateGraphicsPipelines(_device, nullptr, 1, &graphicsPipelineCI, nullptr, &_pipelines[E_PIPELINE_GAME]));
 	vkDestroyShaderModule(_device, shaderVertex, nullptr);
 	vkDestroyShaderModule(_device, shaderFragment, nullptr);
 }
@@ -620,6 +816,84 @@ static glm::vec4	pickCellColor(Level::t_cell cell)
 	}
 
 	return color;
+}
+
+void	Graphics::_renderUI(VkCommandBuffer cmdBuff)
+{
+	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines[E_PIPELINE_UI]);
+
+	const VkViewport	viewport = {
+		.x = 0,
+		.y = 0,
+		.width = static_cast<float>(_windowSize.x),
+		.height = static_cast<float>(_windowSize.y),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+	vkCmdSetViewport(cmdBuff, 0, 1, &viewport);
+
+	const VkRect2D	scissor = {
+		.offset = { 0, 0 },
+		.extent = { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) }
+	};
+	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
+
+	PushConstantsVertUI constants = {
+		.height = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
+		.closeButtonWidth = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
+		._pad = { 0.0f, 0.0f }
+	};
+	PushConstantsFragUI colors = {
+		.barColor = { 0.7f, 0.7f, 0.7f, 1.0f },
+		.closeButtonColor = { 0.8f, 0.1f, 0.1f, 1.0f }
+	};
+	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
+	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, sizeof(constants), sizeof(colors), &colors);
+	vkCmdDraw(cmdBuff, 6, 1, 0, 0);
+}
+
+void	Graphics::_renderGame(VkCommandBuffer cmdBuff, const Level& lvl)
+{
+	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelines[E_PIPELINE_GAME]);
+
+	const VkViewport	viewport = {
+		.x = 0,
+		.y = 0,
+		.width = static_cast<float>(_windowSize.x),
+		.height = static_cast<float>(_windowSize.y),
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+	vkCmdSetViewport(cmdBuff, 0, 1, &viewport);
+
+	const VkRect2D	scissor = {
+		.offset = { 0, 0 },
+		.extent = { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) }
+	};
+	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
+
+	const int	gridWidth = lvl.getWidth();
+	const int	gridHeight = lvl.getHeight();
+	const float	ratio = static_cast<float>(_windowSize.x) / (static_cast<float>(_windowSize.y));
+	for (int x = 0; x < gridWidth; x++)
+	{
+		for (int y = 0; y < gridHeight; y++)
+		{
+			PushConstantsVertGame	constants = {
+				.gridPos = { x, y },
+				.gridSize = { gridWidth, gridHeight },
+				.ratio = ratio,
+				.decorationHeight = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
+				._pad = { 0.0f, 0.0f }
+			};
+			PushConstantsFragGame	color = {
+				.color = pickCellColor(lvl.getCell(x, y))
+			};
+			vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_GAME], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
+			vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_GAME], VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(constants), sizeof(color), &color);
+			vkCmdDraw(cmdBuff, 6, 1, 0, 0);
+		}
+	}
 }
 
 void	Graphics::render(const Level& lvl)
@@ -700,45 +974,9 @@ void	Graphics::render(const Level& lvl)
 		.pStencilAttachment = VK_NULL_HANDLE,
 	};
 	vkCmdBeginRendering(cmdBuff, &renderingInfo);
-	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
-	const VkViewport	viewport = {
-		.x = 0,
-		.y = 0,
-		.width = static_cast<float>(_windowSize.x),
-		.height = static_cast<float>(_windowSize.y),
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-	vkCmdSetViewport(cmdBuff, 0, 1, &viewport);
-
-	const VkRect2D	scissor = {
-		.offset = { 0, 0 },
-		.extent = { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) }
-	};
-	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
-
-	const int	gridWidth = lvl.getWidth();
-	const int	gridHeight = lvl.getHeight();
-	const float	ratio = static_cast<float>(_windowSize.x) / (static_cast<float>(_windowSize.y) - _decorationHeight);
-	for (int x = 0; x < gridWidth; x++)
-	{
-		for (int y = 0; y < gridHeight; y++)
-		{
-			PushConstantsVert	constants = {
-				.gridPos = { x, y },
-				.gridSize = { gridWidth, gridHeight },
-				.ratio = ratio,
-				._pad = { 0.0f, 0.0f, 0.0f }
-			};
-			PushConstantsFrag	color = {
-				.color = pickCellColor(lvl.getCell(x, y))
-			};
-			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
-			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(constants), sizeof(color), &color);
-			vkCmdDraw(cmdBuff, 6, 1, 0, 0);
-		}
-	}
+	_renderUI(cmdBuff);
+	_renderGame(cmdBuff, lvl);
 
 	vkCmdEndRendering(cmdBuff);
 
@@ -781,6 +1019,16 @@ void	Graphics::render(const Level& lvl)
 	_currentFrame = (_currentFrame + 1) % _maxFramesInFlight;
 }
 
+SDL_HitTestResult	Graphics::_hitTestCallback(SDL_Window* win, const SDL_Point* area, void* data)
+{
+	(void)win;
+	Graphics*	self = static_cast<Graphics *>(data);
+
+	if (area->y <= self->_decorationHeight && area->x <= self->_windowSize.x - static_cast<int>(self->_decorationHeight))
+		return SDL_HITTEST_DRAGGABLE;
+	return SDL_HITTEST_NORMAL;
+}
+
 t_keycode		Graphics::getInput(void)
 {
 	SDL_Event	event;
@@ -788,6 +1036,8 @@ t_keycode		Graphics::getInput(void)
 	while (SDL_PollEvent(&event))
 	{
 		if (event.type == SDL_EVENT_QUIT)
+			return E_KEY_ESC;
+		if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.motion.y <= _decorationHeight)
 			return E_KEY_ESC;
 		else if (event.type == SDL_EVENT_KEY_DOWN)
 		{

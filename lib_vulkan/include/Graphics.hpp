@@ -25,8 +25,13 @@ class Graphics : public IGraphLib {
 		VkSwapchainKHR		_swapchain{ VK_NULL_HANDLE };
 		VkCommandPool		_commandPool{ VK_NULL_HANDLE };
 
-		VkPipeline			_pipeline{ VK_NULL_HANDLE };
-		VkPipelineLayout	_pipelineLayout{ VK_NULL_HANDLE };
+		enum E_Pipeline {
+			E_PIPELINE_UI,
+			E_PIPELINE_GAME,
+			E_PIPELINE_COUNT
+		};
+		std::array<VkPipeline, E_PIPELINE_COUNT>		_pipelines;
+		std::array<VkPipelineLayout, E_PIPELINE_COUNT>	_pipelineLayouts;
 
 		const static uint32_t							_maxFramesInFlight = 2;
 		std::array<VkCommandBuffer, _maxFramesInFlight>	_commandBuffers;
@@ -45,8 +50,7 @@ class Graphics : public IGraphLib {
 		SDL_Window*			_window = nullptr;
 		glm::ivec2			_windowSize;
 		bool				_hasValidationLayer = false;
-		bool				_hasDecoration = false;
-		float				_decorationHeight = 0.0f;
+		float				_decorationHeight = 30.0f;
 
 		void	_createVkApplicationInfo(void);
 		void	_createVkInstance(void);
@@ -57,7 +61,15 @@ class Graphics : public IGraphLib {
 		void	_createSwapchain(void);
 		void	_createSwapchainImages(void);
 		void	_createSyncObjects(void);
+
 		void	_createPipeline(void);
+		void	_createUIPipeline(void);
+		void	_createGamePipeline(void);
+
+		static SDL_HitTestResult	_hitTestCallback(SDL_Window* win, const SDL_Point* area, void* data);
+
+		void	_renderUI(VkCommandBuffer cmdBuff);
+		void	_renderGame(VkCommandBuffer cmdBuff, const Level& lvl);
 
 	public:
 		Graphics(void);
