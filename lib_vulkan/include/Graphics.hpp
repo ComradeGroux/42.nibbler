@@ -45,6 +45,7 @@ class Graphics : public IGraphLib {
 		SDL_Window*			_window = nullptr;
 		glm::ivec2			_windowSize;
 		bool				_hasValidationLayer = false;
+		bool				_hasDecoration = false;
 
 		void	_createVkApplicationInfo(void);
 		void	_createVkInstance(void);

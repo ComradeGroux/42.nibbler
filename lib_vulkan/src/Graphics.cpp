@@ -38,12 +38,15 @@ struct PushConstants {
 
 Graphics::Graphics(void)
 {
+	SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_PREFER_LIBDECOR, "1");
+
 	if (!SDL_Init(SDL_INIT_VIDEO))
 		throw std::runtime_error(SDL_GetError());
+
 	if (!SDL_Vulkan_LoadLibrary(NULL))
 		throw std::runtime_error(SDL_GetError());
 	volkInitializeCustom((PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr());
-	
+
 	_createVkApplicationInfo();
 	_createVkInstance();
 	_createVkDeviceAndQueue();
@@ -77,6 +80,7 @@ Graphics::~Graphics(void)
 	vkDestroyDevice(_device, nullptr);
 	vkDestroyInstance(_instance, nullptr);
 	volkFinalize();
+	SDL_Vulkan_UnloadLibrary();
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	SDL_Quit();
 }
@@ -290,9 +294,14 @@ void	Graphics::_createAllocator(void)
 
 void	Graphics::_createWindowAndSurface(void)
 {
-	_window = SDL_CreateWindow("nibbler - Vulkan", 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_INPUT_FOCUS);
+	_window = SDL_CreateWindow("nibbler - Vulkan", 800, 600, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 	if (!_window)
 		throw std::runtime_error(SDL_GetError());
+	SDL_SyncWindow(_window);
+
+	SDL_WindowFlags	flags = SDL_GetWindowFlags(_window);
+	if (flags & SDL_WINDOW_BORDERLESS)
+		_hasDecoration = true;
 
 	if (!SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface))
 		throw std::runtime_error(SDL_GetError());
@@ -681,7 +690,7 @@ void	Graphics::render(const Level& lvl)
 	vkCmdBeginRendering(cmdBuff, &renderingInfo);
 	vkCmdBindPipeline(cmdBuff, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
-	VkViewport	viewport = {
+	const VkViewport	viewport = {
 		.x = 0,
 		.y = 0,
 		.width = static_cast<float>(_windowSize.x),
@@ -691,23 +700,26 @@ void	Graphics::render(const Level& lvl)
 	};
 	vkCmdSetViewport(cmdBuff, 0, 1, &viewport);
 
-	VkRect2D	scissor = {
+	const VkRect2D	scissor = {
 		.offset = { 0, 0 },
 		.extent = { static_cast<uint32_t>(_windowSize.x), static_cast<uint32_t>(_windowSize.y) }
 	};
 	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
 
-	for (int x = 0; x < lvl.getWidth(); x++)
+	const int	width = lvl.getWidth();
+	const int	height = lvl.getHeight();
+	const float	ratio = static_cast<float>(width) / static_cast<float>(height);
+	for (int x = 0; x < width; x++)
 	{
-		for (int y = 0; y < lvl.getHeight(); y++)
+		for (int y = 0; y < height; y++)
 		{
 			PushConstants	constants = {
 				.gridPos = { x, y },
-				.gridSize = { lvl.getWidth(), lvl.getHeight() },
+				.gridSize = { width, height },
 				.color = pickCellColor(lvl.getCell(x, y)),
-				.ratio = static_cast<float>(lvl.getWidth()) / static_cast<float>(lvl.getHeight()),
+				.ratio = ratio,
 			};
-			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &constants);
+			vkCmdPushConstants(cmdBuff, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
 		}
 	}
 
