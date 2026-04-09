@@ -302,6 +302,8 @@ void	Graphics::_createWindowAndSurface(void)
 	SDL_WindowFlags	flags = SDL_GetWindowFlags(_window);
 	if (flags & SDL_WINDOW_BORDERLESS)
 		_hasDecoration = true;
+	else
+		_decorationHeight = 30.0f;
 
 	if (!SDL_Vulkan_CreateSurface(_window, _instance, nullptr, &_surface))
 		throw std::runtime_error(SDL_GetError());
@@ -672,7 +674,7 @@ void	Graphics::render(const Level& lvl)
 		.resolveImageLayout = {},
 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		.clearValue = { .color = { 0.1f, 0.1f, 0.1f, 1.0f } },
+		.clearValue = { .color = { 0.0f, 0.0f, 0.0f, 1.0f } },
 	};
 	const VkRenderingInfo	renderingInfo = {
 		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
@@ -707,7 +709,7 @@ void	Graphics::render(const Level& lvl)
 
 	const int	gridWidth = lvl.getWidth();
 	const int	gridHeight = lvl.getHeight();
-	const float	ratio = static_cast<float>(_windowSize.x) / static_cast<float>(_windowSize.y);
+	const float	ratio = static_cast<float>(_windowSize.x) / (static_cast<float>(_windowSize.y) - _decorationHeight);
 	for (int x = 0; x < gridWidth; x++)
 	{
 		for (int y = 0; y < gridHeight; y++)

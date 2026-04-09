@@ -46,6 +46,7 @@ class Graphics : public IGraphLib {
 		glm::ivec2			_windowSize;
 		bool				_hasValidationLayer = false;
 		bool				_hasDecoration = false;
+		float				_decorationHeight = 0.0f;
 
 		void	_createVkApplicationInfo(void);
 		void	_createVkInstance(void);
