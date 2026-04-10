@@ -34,7 +34,7 @@ static inline void	chk(VkResult result)
 struct PushConstantsVertUI {
 	glm::vec4	color;
 	float		height;
-	float		closeButtonWidth;
+	float		ratio;
 	bool		isButton;
 };
 
@@ -828,15 +828,15 @@ void	Graphics::_renderUI(VkCommandBuffer cmdBuff)
 	vkCmdSetScissor(cmdBuff, 0, 1, &scissor);
 
 	PushConstantsVertUI constants = {
-		.color = { 0.2f, 0.2f, 0.2f, 1.0f },
+		.color = { 0.15f, 0.15f, 0.15f, 1.0f },
 		.height = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
-		.closeButtonWidth = 2.0f / static_cast<float>(_windowSize.y) * _decorationHeight,
+		.ratio = static_cast<float>(_windowSize.x) / static_cast<float>(_windowSize.y),
 		.isButton = false
 	};
 	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
 	vkCmdDraw(cmdBuff, 6, 1, 0, 0);
 
-	constants.color = { 0.8f, 0.2f, 0.2f, 1.0f };
+	constants.color = { 0.25f, 0.25f, 0.25f, 1.0f };
 	constants.isButton = true;
 	vkCmdPushConstants(cmdBuff, _pipelineLayouts[E_PIPELINE_UI], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(constants), &constants);
 	vkCmdDraw(cmdBuff, 6, 1, 0, 0);
@@ -1014,8 +1014,17 @@ SDL_HitTestResult	Graphics::_hitTestCallback(SDL_Window* win, const SDL_Point* a
 	(void)win;
 	Graphics*	self = static_cast<Graphics *>(data);
 
-	if (area->y <= self->_decorationHeight && area->x <= self->_windowSize.x - static_cast<int>(self->_decorationHeight))
+	int	btnCenterX = self->_windowSize.x - static_cast<int>(self->_decorationHeight / 2.0f);
+	int	btnCenterY = static_cast<int>(self->_decorationHeight / 2.0f);
+	int	radius = static_cast<int>(self->_decorationHeight / 2.0f);
+	int	dx = area->x - btnCenterX;
+	int	dy = area->y - btnCenterY;
+
+	if (dx*dx + dy*dy <= radius*radius)
+		return SDL_HITTEST_NORMAL;
+	else if (area->y <= self->_decorationHeight)
 		return SDL_HITTEST_DRAGGABLE;
+
 	return SDL_HITTEST_NORMAL;
 }
 
